@@ -26,6 +26,15 @@
 
 namespace oll
 {
+// definície typov
+const unsigned int DIMENSION = 2;
+typedef double PixelType;
+typedef unsigned short LabeledPixelType;
+typedef otb::VectorImage<PixelType, DIMENSION> ImageType;
+typedef otb::Image<LabeledPixelType, DIMENSION> LabeledImageType;
+
+typedef otb::VectorData<PixelType, DIMENSION> VectorDataType;
+
 enum existanceCheckType
 {
     inputFilePath,
@@ -41,6 +50,9 @@ enum trainingMethod
 };
 
 bool checkIfExists(const boost::filesystem::path path, const oll::existanceCheckType mode);
+void train(oll::ImageType::Pointer image, oll::VectorDataType::Pointer trainingSites, std::string outputModel,
+           std::string classAttributeName, oll::trainingMethod trainingMethod);
+void classify(oll::ImageType::Pointer image, std::string inputModel, oll::LabeledImageType::Pointer outputImage);
 }
 
 #endif

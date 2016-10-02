@@ -118,4 +118,30 @@ void train(oll::ImageType::Pointer image, oll::VectorDataType::Pointer trainingS
     }
     }
 }
+void classify(oll::ImageType::Pointer image, std::string inputModel, oll::LabeledImageType::Pointer outputImage)
+{
+    oll::checkIfExists(inputModel, oll::inputFilePath);
+
+    typedef otb::ImageClassificationFilter<oll::ImageType, oll::LabeledImageType> ClassificationFilterType;
+    typedef ClassificationFilterType::ModelType ModelType;
+    typedef otb::MachineLearningModelFactory<oll::PixelType, oll::LabeledPixelType> MachineLearningModelFactoryType;
+    typedef otb::ImageFileReader<oll::ImageType> ReaderType;
+    typedef otb::ImageFileWriter<oll::LabeledImageType> WriterType;
+
+    ClassificationFilterType::Pointer classifier = ClassificationFilterType::New();
+
+    ReaderType::Pointer reader = ReaderType::New();
+    reader->SetFileName(inputModel);
+
+    ModelType::Pointer model;
+    model = MachineLearningModelFactoryType::CreateMachineLearningModel(inputModel, MachineLearningModelFactoryType::ReadMode);
+
+    model->Load(inputModel);
+    classifier->SetModel(model);
+
+    classifier->SetInput(image);
+
+    outputImage = classifier->GetOutput();
+    outputImage->Update();
+}
 }
