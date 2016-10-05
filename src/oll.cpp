@@ -118,15 +118,15 @@ void train(oll::ImageType::Pointer image, oll::VectorDataType::Pointer trainingS
     }
     }
 }
-void classify(oll::ImageType::Pointer image, std::string inputModel, oll::LabeledImageType::Pointer outputImage)
+void classify(oll::ImageType::Pointer image, std::string inputModel, oll::LabelImageType::Pointer outputRaster)
 {
     oll::checkIfExists(inputModel, oll::inputFilePath);
 
-    typedef otb::ImageClassificationFilter<oll::ImageType, oll::LabeledImageType> ClassificationFilterType;
+    typedef otb::ImageClassificationFilter<oll::ImageType, oll::LabelImageType> ClassificationFilterType;
     typedef ClassificationFilterType::ModelType ModelType;
-    typedef otb::MachineLearningModelFactory<oll::PixelType, oll::LabeledPixelType> MachineLearningModelFactoryType;
+    typedef otb::MachineLearningModelFactory<oll::PixelType, oll::LabelPixelType> MachineLearningModelFactoryType;
     typedef otb::ImageFileReader<oll::ImageType> ReaderType;
-    typedef otb::ImageFileWriter<oll::LabeledImageType> WriterType;
+    // typedef otb::ImageFileWriter<oll::LabelImageType> WriterType;
 
     ClassificationFilterType::Pointer classifier = ClassificationFilterType::New();
 
@@ -141,7 +141,35 @@ void classify(oll::ImageType::Pointer image, std::string inputModel, oll::Labele
 
     classifier->SetInput(image);
 
-    outputImage = classifier->GetOutput();
-    outputImage->Update();
+    classifier->Update();
+    outputRaster->Graft(classifier->GetOutput());
+}
+
+void trainingSitesToRaster(oll::VectorDataType::Pointer trainingSites, oll::LabelImageType::Pointer outputRaster,
+                           oll::ImageType::Pointer referenceRaster, std::string attribute)
+{
+    VectorDataToLabelImageFilterType::Pointer rasterizer = VectorDataToLabelImageFilterType::New();
+    rasterizer->SetOutputParametersFromImage(referenceRaster);
+    rasterizer->SetBurnAttribute(attribute);
+    rasterizer->AddVectorData(trainingSites);
+
+    rasterizer->Update();
+    outputRaster->Graft(rasterizer->GetOutput());
+}
+
+void vypocitajChybovuMaticu(oll::LabelImageType::Pointer classifiedRaster, oll::LabelImageType::Pointer groundTruth)
+{
+
+}
+
+void ulozRaster(oll::LabelImageType::Pointer raster, std::string outputFile)
+{
+    oll::checkIfExists(outputFile, oll::outputFilePath);
+
+    typedef otb::ImageFileWriter<LabelImageType> WriterType;
+    WriterType::Pointer writer = WriterType::New();
+    writer->SetFileName(outputFile);
+    writer->SetInput(raster);
+    writer->Update();
 }
 }

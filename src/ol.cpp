@@ -1,6 +1,8 @@
 #include "oll.hpp"
 #include <iostream>
 
+#include <ITK-4.10/itkIndent.h>
+
 using std::string;
 using std::cout;
 using std::cerr;
@@ -36,8 +38,15 @@ int main()
     oll::VectorDataType::Pointer trainingSites = vectorReader->GetOutput();
     trainingSites->Update();
 
-    oll::train(LandsatImage, trainingSites, "/home/peter/modelDT.txt", classAtribure, oll::desicionTree);
-    oll::train(LandsatImage, trainingSites, "/home/peter/modelGBT.txt", classAtribure, oll::gradientBoostedTree);
-    oll::train(LandsatImage, trainingSites, "/home/peter/modelLibSVM.txt", classAtribure, oll::libSVM);
+    // oll::train(LandsatImage, trainingSites, "/home/peter/modelDT.txt", classAtribure, oll::desicionTree);
+    // oll::train(LandsatImage, trainingSites, "/home/peter/modelGBT.txt", classAtribure, oll::gradientBoostedTree);
+    // oll::train(LandsatImage, trainingSites, "/home/peter/modelLibSVM.txt", classAtribure, oll::libSVM);
+
+    oll::LabelImageType::Pointer trainingSitesRaster = oll::LabelImageType::New();
+
+    oll::trainingSitesToRaster(trainingSites, trainingSitesRaster, LandsatImage, classAtribure);
+
+    // oll::ulozRaster(trainingSitesRaster, "/home/peter/pokus.tif");
+
     return 1;
 }

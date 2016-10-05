@@ -7,3 +7,5 @@
 /src/.oll.hpp.~undo-tree~
 /src/flycheck_ol.plist
 /src/flycheck_oll.plist
+data/
+debug/
