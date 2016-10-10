@@ -55,6 +55,43 @@ bool checkIfExists(const boost::filesystem::path path, const oll::existanceCheck
     }
 }
 
+void loadRaster(oll::ImageType::Pointer raster, std::string path)
+{
+    oll::checkIfExists(path, oll::inputFilePath);
+
+    typedef otb::ImageFileReader<oll::ImageType> ImageFileReaderType;
+    ImageFileReaderType::Pointer reader = ImageFileReaderType::New();
+    reader->SetFileName(path);
+    reader->Update();
+    raster->Graft(reader->GetOutput());
+    raster->Update();
+}
+
+void loadRaster(oll::LabelImageType::Pointer raster, std::string path)
+{
+    oll::checkIfExists(path, oll::inputFilePath);
+
+    typedef otb::ImageFileReader<oll::LabelImageType> ImageFileReaderType;
+    ImageFileReaderType::Pointer reader = ImageFileReaderType::New();
+    reader->SetFileName(path);
+    reader->Update();
+    raster->Graft(reader->GetOutput());
+    raster->Update();
+}
+
+void loadVector(oll::VectorDataType::Pointer vector, std::string path)
+{
+    oll::checkIfExists(path, oll::inputFilePath);
+
+    typedef otb::VectorDataFileReader<oll::VectorDataType> VectorReaderType;
+    VectorReaderType::Pointer vectorReader = VectorReaderType::New();
+    vectorReader->SetFileName(path);
+    vectorReader->Update();
+
+    vector->Graft(vectorReader->GetOutput());
+    vector->Update();
+}
+
 void train(oll::ImageType::Pointer image, oll::VectorDataType::Pointer trainingSites, std::string outputModel,
            std::string classAttributeName, oll::trainingMethod trainingMethod)
 {
@@ -118,6 +155,7 @@ void train(oll::ImageType::Pointer image, oll::VectorDataType::Pointer trainingS
     }
     }
 }
+
 void classify(oll::ImageType::Pointer image, std::string inputModel, oll::LabelImageType::Pointer outputRaster)
 {
     oll::checkIfExists(inputModel, oll::inputFilePath);
@@ -133,8 +171,7 @@ void classify(oll::ImageType::Pointer image, std::string inputModel, oll::LabelI
     ReaderType::Pointer reader = ReaderType::New();
     reader->SetFileName(inputModel);
 
-    ModelType::Pointer model;
-    model = MachineLearningModelFactoryType::CreateMachineLearningModel(inputModel, MachineLearningModelFactoryType::ReadMode);
+    ModelType::Pointer model = MachineLearningModelFactoryType::CreateMachineLearningModel(inputModel, MachineLearningModelFactoryType::ReadMode);
 
     model->Load(inputModel);
     classifier->SetModel(model);
@@ -157,9 +194,40 @@ void trainingSitesToRaster(oll::VectorDataType::Pointer trainingSites, oll::Labe
     outputRaster->Graft(rasterizer->GetOutput());
 }
 
-void vypocitajChybovuMaticu(oll::LabelImageType::Pointer classifiedRaster, oll::LabelImageType::Pointer groundTruth)
+void vypocitajChybovuMaticu(oll::LabelImageType::Pointer classifiedRaster, oll::VectorDataType::Pointer groundTruthVector, std::string classAttributeName)
 {
+    // vector data reprojection to source image projection
+    typedef otb::VectorDataIntoImageProjectionFilter<VectorDataType, LabelImageType> VectorDataReprojectionType;
+    VectorDataReprojectionType::Pointer vdReproj = VectorDataReprojectionType::New();
 
+    vdReproj->SetInputImage(classifiedRaster);
+    vdReproj->SetInput(groundTruthVector);
+    vdReproj->SetUseOutputSpacingAndOriginFromImage(false);
+    vdReproj->Update();
+
+    // LabelImageType to VectorImageType
+    oll::LabelImageListType::Pointer imageList = oll::LabelImageListType::New();
+    imageList->PushBack(classifiedRaster);
+    oll::ImageListToVectorImageFilterType::Pointer imageListToVectorImage = oll::ImageListToVectorImageFilterType::New();
+    imageListToVectorImage->SetInput(imageList);
+    oll::VectorImageType::Pointer classifiedVectorRaster = imageListToVectorImage->GetOutput();
+    classifiedVectorRaster->Update();
+
+    // transforming training samples into samples
+    typedef otb::ListSampleGenerator<VectorImageType, VectorDataType> ListSampleGeneratorType;
+    ListSampleGeneratorType::Pointer sampleGenerator = ListSampleGeneratorType::New();
+    sampleGenerator->SetInput(classifiedVectorRaster);
+    sampleGenerator->SetInputVectorData(groundTruthVector);
+    sampleGenerator->SetClassKey(classAttributeName);
+    sampleGenerator->Update();
+
+    // confusion matrix computation
+    typedef otb::ConfusionMatrixCalculator<ListSampleGeneratorType::ListLabelType, ListSampleGeneratorType::ListSampleType> ConfusionMatrixCalculatorType;
+    ConfusionMatrixCalculatorType::Pointer cm = ConfusionMatrixCalculatorType::New();
+    cm->SetReferenceLabels(sampleGenerator->GetTrainingListLabel());
+    cm->SetProducedLabels(sampleGenerator->GetTrainingListSample());
+    cm->Compute();
+    std::cout << cm->GetKappaIndex() << std::endl;
 }
 
 void ulozRaster(oll::LabelImageType::Pointer raster, std::string outputFile)
@@ -167,6 +235,17 @@ void ulozRaster(oll::LabelImageType::Pointer raster, std::string outputFile)
     oll::checkIfExists(outputFile, oll::outputFilePath);
 
     typedef otb::ImageFileWriter<LabelImageType> WriterType;
+    WriterType::Pointer writer = WriterType::New();
+    writer->SetFileName(outputFile);
+    writer->SetInput(raster);
+    writer->Update();
+}
+
+void ulozRaster(oll::ImageType::Pointer raster, std::string outputFile)
+{
+    oll::checkIfExists(outputFile, oll::outputFilePath);
+
+    typedef otb::ImageFileWriter<ImageType> WriterType;
     WriterType::Pointer writer = WriterType::New();
     writer->SetFileName(outputFile);
     writer->SetInput(raster);

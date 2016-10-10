@@ -1,8 +1,6 @@
 #include "oll.hpp"
 #include <iostream>
 
-#include <ITK-4.10/itkIndent.h>
-
 using std::string;
 using std::cout;
 using std::cerr;
@@ -20,33 +18,39 @@ const string outputImage = outputDirectory + "L8.tif";
 int main()
 {
     // input image reading
-    oll::checkIfExists(sourceImage, oll::inputFilePath);
-
-    typedef otb::ImageFileReader<oll::ImageType> LandsatReaderType;
-    LandsatReaderType::Pointer reader = LandsatReaderType::New();
-    reader->SetFileName(sourceImage);
-    oll::ImageType::Pointer LandsatImage = reader->GetOutput();
-    LandsatImage->UpdateOutputInformation();
+    oll::ImageType::Pointer landsatImage = oll::ImageType::New();
+    oll::loadRaster(landsatImage, sourceImage);
 
     // input training samples reading
-    oll::checkIfExists(trainingSamples, oll::inputFilePath);
+    oll::VectorDataType::Pointer trainingSites = oll::VectorDataType::New();
+    oll::loadVector(trainingSites, trainingSamples);
 
-    typedef otb::VectorDataFileReader<oll::VectorDataType> VectorReaderType;
-    VectorReaderType::Pointer vectorReader = VectorReaderType::New();
-    vectorReader->SetFileName(trainingSamples);
-    vectorReader->Update();
-    oll::VectorDataType::Pointer trainingSites = vectorReader->GetOutput();
-    trainingSites->Update();
+    // image training
+    oll::train(landsatImage, trainingSites, "/home/peter/modelDT.txt", classAtribure, oll::desicionTree);
+    // oll::train(landsatImage, trainingSites, "/home/peter/modelGBT.txt", classAtribure, oll::gradientBoostedTree);
+    // oll::train(landsatImage, trainingSites, "/home/peter/modelLibSVM.txt", classAtribure, oll::libSVM);
 
-    // oll::train(LandsatImage, trainingSites, "/home/peter/modelDT.txt", classAtribure, oll::desicionTree);
-    // oll::train(LandsatImage, trainingSites, "/home/peter/modelGBT.txt", classAtribure, oll::gradientBoostedTree);
-    // oll::train(LandsatImage, trainingSites, "/home/peter/modelLibSVM.txt", classAtribure, oll::libSVM);
+    // image classification
+    oll::LabelImageType::Pointer DTClassified = oll::LabelImageType::New();
+    oll::LabelImageType::Pointer GBTClassified = oll::LabelImageType::New();
+    oll::LabelImageType::Pointer LibSVMClassified = oll::LabelImageType::New();
+    // oll::classify(landsatImage, "/home/peter/modelDT.txt", DTClassified);
+    // oll::classify(landsatImage, "/home/peter/modelGBT.txt", GBTClassified);
+    // oll::classify(landsatImage, "/home/peter/modelLibSVM.txt", LibSVMClassified);
 
+    // oll::ulozRaster(DTClassified, "/home/peter/classified_DT.tif");
+    // oll::ulozRaster(GBTClassified, "/home/peter/classified_GBT.tif");
+    // oll::ulozRaster(LibSVMClassified, "/home/peter/classified_SVM.tif");
+
+    oll::loadRaster(DTClassified, "/home/peter/classified_DT.tif");
+    oll::loadRaster(GBTClassified, "/home/peter/classified_GBT.tif");
+    oll::loadRaster(LibSVMClassified, "/home/peter/classified_SVM.tif");
+
+    // training sites to raster
     oll::LabelImageType::Pointer trainingSitesRaster = oll::LabelImageType::New();
+    oll::trainingSitesToRaster(trainingSites, trainingSitesRaster, landsatImage, classAtribure);
 
-    oll::trainingSitesToRaster(trainingSites, trainingSitesRaster, LandsatImage, classAtribure);
-
-    // oll::ulozRaster(trainingSitesRaster, "/home/peter/pokus.tif");
+    oll::vypocitajChybovuMaticu(DTClassified, trainingSites, classAtribure);
 
     return 1;
 }
