@@ -51,9 +51,9 @@ int main()
     oll::loadRaster(LibSVMClassified, "/home/peter/classified_SVM.tif");
 
     // confusion matrices computation
-    oll::ConfusionMatrixType DTcm = oll::vypocitajChybovuMaticu(DTClassified, groundTruthVector, classAtribure);
-    oll::ConfusionMatrixType GBTcm = oll::vypocitajChybovuMaticu(GBTClassified, groundTruthVector, classAtribure);
-    oll::ConfusionMatrixType LibSVMcm = oll::vypocitajChybovuMaticu(LibSVMClassified, groundTruthVector, classAtribure);
+    oll::confMatData DTcm = oll::vypocitajChybovuMaticu(DTClassified, groundTruthVector, classAtribure);
+    oll::confMatData GBTcm = oll::vypocitajChybovuMaticu(GBTClassified, groundTruthVector, classAtribure);
+    oll::confMatData LibSVMcm = oll::vypocitajChybovuMaticu(LibSVMClassified, groundTruthVector, classAtribure);
 
     // for (unsigned int i = 0; i < cm.Rows(); ++i)
     // {
@@ -66,11 +66,11 @@ int main()
 
     std::vector<oll::ConfusionMatrixType> matrices;
     oll::LabelImageListType::Pointer classifiedImages = oll::LabelImageListType::New();
-    matrices.push_back(DTcm);
+    matrices.push_back(DTcm.confMat);
     classifiedImages->PushBack(DTClassified);
-    matrices.push_back(GBTcm);
+    matrices.push_back(GBTcm.confMat);
     classifiedImages->PushBack(GBTClassified);
-    matrices.push_back(LibSVMcm);
+    matrices.push_back(LibSVMcm.confMat);
     classifiedImages->PushBack(LibSVMClassified);
 
     return 1;
