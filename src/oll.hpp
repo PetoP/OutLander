@@ -2,7 +2,7 @@
 #define OUTLANDERLIBRARY_HPP_
 
 #include <ITK-4.10/itkLabelVotingImageFilter.h>
-#include <ITK-4.10/itkImageToListSampleAdaptor.h>
+#include <ITK-4.10/itkVariableSizeMatrix.h>
 
 #include <otbConfusionMatrixCalculator.h>
 #include <otbConfusionMatrixToMassOfBelief.h>
@@ -54,7 +54,6 @@ typedef otb::ImageListToVectorImageFilter<LabelImageListType, VectorImageType> I
 typedef otb::DSFusionOfClassifiersImageFilter<VectorImageType, LabelImageType> DSFusionOfClassifiersImageFilterType;
 typedef otb::VectorDataToLabelImageFilter<VectorDataType, LabelImageType> VectorDataToLabelImageFilterType;
 typedef otb::VectorDataIntoImageProjectionFilter<VectorDataType, ImageType> VectorDataReprojectionType;
-// typedef otb::ConfusionMatrixCalculator<LabelImageType, LabelImageType> ConfusionMatrixCalculatorType;
 
 // druh testovania existenice priečinku, alebo súboru
 enum existanceCheckType
@@ -83,7 +82,7 @@ void trainingSitesToRaster(oll::VectorDataType::Pointer trainingSites, oll::Labe
                            oll::ImageType::Pointer referenceRaster, std::string attribute);
 void ulozRaster(oll::LabelImageType::Pointer raster, std::string outputFile);
 void ulozRaster(oll::ImageType::Pointer raster, std::string outputFile);
-void vypocitajChybovuMaticu(oll::LabelImageType::Pointer classifiedRaster, oll::VectorDataType::Pointer groundTruthVector,
+ConfusionMatrixType vypocitajChybovuMaticu(oll::LabelImageType::Pointer classifiedRaster, oll::VectorDataType::Pointer groundTruthVector,
                             std::string classAttributeName);
 }
 

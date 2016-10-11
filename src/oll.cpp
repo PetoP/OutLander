@@ -111,6 +111,7 @@ void train(oll::ImageType::Pointer image, oll::VectorDataType::Pointer trainingS
     sampleGenerator->SetInput(image);
     sampleGenerator->SetInputVectorData(trainingSites);
     sampleGenerator->SetClassKey(classAttributeName);
+    sampleGenerator->SetBoundByMin(false);
 
     sampleGenerator->Update();
 
@@ -194,7 +195,7 @@ void trainingSitesToRaster(oll::VectorDataType::Pointer trainingSites, oll::Labe
     outputRaster->Graft(rasterizer->GetOutput());
 }
 
-void vypocitajChybovuMaticu(oll::LabelImageType::Pointer classifiedRaster, oll::VectorDataType::Pointer groundTruthVector, std::string classAttributeName)
+oll::ConfusionMatrixType vypocitajChybovuMaticu(oll::LabelImageType::Pointer classifiedRaster, oll::VectorDataType::Pointer groundTruthVector, std::string classAttributeName)
 {
     // vector data reprojection to source image projection
     typedef otb::VectorDataIntoImageProjectionFilter<VectorDataType, LabelImageType> VectorDataReprojectionType;
@@ -219,15 +220,20 @@ void vypocitajChybovuMaticu(oll::LabelImageType::Pointer classifiedRaster, oll::
     sampleGenerator->SetInput(classifiedVectorRaster);
     sampleGenerator->SetInputVectorData(groundTruthVector);
     sampleGenerator->SetClassKey(classAttributeName);
+    sampleGenerator->SetValidationTrainingProportion(1);
+    sampleGenerator->SetBoundByMin(false);
     sampleGenerator->Update();
 
     // confusion matrix computation
     typedef otb::ConfusionMatrixCalculator<ListSampleGeneratorType::ListLabelType, ListSampleGeneratorType::ListSampleType> ConfusionMatrixCalculatorType;
     ConfusionMatrixCalculatorType::Pointer cm = ConfusionMatrixCalculatorType::New();
-    cm->SetReferenceLabels(sampleGenerator->GetTrainingListLabel());
-    cm->SetProducedLabels(sampleGenerator->GetTrainingListSample());
+    cm->SetReferenceLabels(sampleGenerator->GetValidationListLabel());
+    cm->SetProducedLabels(sampleGenerator->GetValidationListSample());
     cm->Compute();
-    std::cout << cm->GetKappaIndex() << std::endl;
+    std::cout << "Kappa: " << cm->GetKappaIndex() << std::endl <<
+        "Overal accuracy: " << cm->GetOverallAccuracy() << std::endl <<
+        "Počet vzoriek: " << cm->GetNumberOfSamples() << std::endl;
+    return cm->GetConfusionMatrix();
 }
 
 void ulozRaster(oll::LabelImageType::Pointer raster, std::string outputFile)

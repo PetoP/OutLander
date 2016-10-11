@@ -10,6 +10,7 @@ const string sourceDirectory = "/run/media/peter/WD/ZIK/diplomovka/klasifikator/
 const string sourceImage = sourceDirectory + "L8.tif";
 
 const string trainingSamples = sourceDirectory + "tren.shp";
+const string groundTruth = sourceDirectory + "kappa.shp";
 const string classAtribure = "plod_id";
 
 const string outputDirectory = "/home/peter/Plocha/";
@@ -25,6 +26,9 @@ int main()
     oll::VectorDataType::Pointer trainingSites = oll::VectorDataType::New();
     oll::loadVector(trainingSites, trainingSamples);
 
+    // input groundTruth reading
+    oll::VectorDataType::Pointer groundTruthVector = oll::VectorDataType::New();
+    oll::loadVector(groundTruthVector, groundTruth);
     // image training
     oll::train(landsatImage, trainingSites, "/home/peter/modelDT.txt", classAtribure, oll::desicionTree);
     // oll::train(landsatImage, trainingSites, "/home/peter/modelGBT.txt", classAtribure, oll::gradientBoostedTree);
@@ -50,7 +54,16 @@ int main()
     oll::LabelImageType::Pointer trainingSitesRaster = oll::LabelImageType::New();
     oll::trainingSitesToRaster(trainingSites, trainingSitesRaster, landsatImage, classAtribure);
 
-    oll::vypocitajChybovuMaticu(DTClassified, trainingSites, classAtribure);
+    oll::ConfusionMatrixType cm = oll::vypocitajChybovuMaticu(LibSVMClassified, groundTruthVector, classAtribure);
+
+    for (unsigned int i = 0; i < cm.Rows(); ++i)
+    {
+        for (unsigned int j = 0; j < cm.Cols(); ++j)
+        {
+            std::cout << cm.operator()(i, j) << " ";
+        }
+        std::cout << std::endl;
+    }
 
     return 1;
 }
