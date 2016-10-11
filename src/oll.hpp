@@ -54,6 +54,14 @@ typedef otb::ImageListToVectorImageFilter<LabelImageListType, VectorImageType> I
 typedef otb::DSFusionOfClassifiersImageFilter<VectorImageType, LabelImageType> DSFusionOfClassifiersImageFilterType;
 typedef otb::VectorDataToLabelImageFilter<VectorDataType, LabelImageType> VectorDataToLabelImageFilterType;
 typedef otb::VectorDataIntoImageProjectionFilter<VectorDataType, ImageType> VectorDataReprojectionType;
+typedef otb::ListSampleGenerator<VectorImageType, VectorDataType> ListSampleGeneratorType;
+typedef otb::ConfusionMatrixCalculator<ListSampleGeneratorType::ListLabelType, ListSampleGeneratorType::ListSampleType>
+        ConfusionMatrixCalculatorType;
+// struct for recieving data from vypocitajChybovuMaticu
+typedef struct {
+    ConfusionMatrixType confMat;
+    ConfusionMatrixCalculatorType::MapOfClassesType mapOfClasses;
+} confMatData;
 
 // druh testovania existenice priečinku, alebo súboru
 enum existanceCheckType
@@ -78,12 +86,10 @@ void loadVector(oll::VectorDataType::Pointer vector, std::string path);
 void train(oll::ImageType::Pointer image, oll::VectorDataType::Pointer trainingSites, std::string outputModel,
            std::string classAttributeName, oll::trainingMethod trainingMethod);
 void classify(oll::ImageType::Pointer image, std::string inputModel, oll::LabelImageType::Pointer outputRaster);
-void trainingSitesToRaster(oll::VectorDataType::Pointer trainingSites, oll::LabelImageType::Pointer outputRaster,
-                           oll::ImageType::Pointer referenceRaster, std::string attribute);
 void ulozRaster(oll::LabelImageType::Pointer raster, std::string outputFile);
 void ulozRaster(oll::ImageType::Pointer raster, std::string outputFile);
-ConfusionMatrixType vypocitajChybovuMaticu(oll::LabelImageType::Pointer classifiedRaster, oll::VectorDataType::Pointer groundTruthVector,
-                            std::string classAttributeName);
+confMatData vypocitajChybovuMaticu(oll::LabelImageType::Pointer classifiedRaster, oll::VectorDataType::Pointer groundTruthVector,
+                                           std::string classAttributeName);
 }
 
 #endif

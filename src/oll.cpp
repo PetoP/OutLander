@@ -172,7 +172,8 @@ void classify(oll::ImageType::Pointer image, std::string inputModel, oll::LabelI
     ReaderType::Pointer reader = ReaderType::New();
     reader->SetFileName(inputModel);
 
-    ModelType::Pointer model = MachineLearningModelFactoryType::CreateMachineLearningModel(inputModel, MachineLearningModelFactoryType::ReadMode);
+    ModelType::Pointer model =
+        MachineLearningModelFactoryType::CreateMachineLearningModel(inputModel, MachineLearningModelFactoryType::ReadMode);
 
     model->Load(inputModel);
     classifier->SetModel(model);
@@ -183,19 +184,8 @@ void classify(oll::ImageType::Pointer image, std::string inputModel, oll::LabelI
     outputRaster->Graft(classifier->GetOutput());
 }
 
-void trainingSitesToRaster(oll::VectorDataType::Pointer trainingSites, oll::LabelImageType::Pointer outputRaster,
-                           oll::ImageType::Pointer referenceRaster, std::string attribute)
-{
-    VectorDataToLabelImageFilterType::Pointer rasterizer = VectorDataToLabelImageFilterType::New();
-    rasterizer->SetOutputParametersFromImage(referenceRaster);
-    rasterizer->SetBurnAttribute(attribute);
-    rasterizer->AddVectorData(trainingSites);
-
-    rasterizer->Update();
-    outputRaster->Graft(rasterizer->GetOutput());
-}
-
-oll::ConfusionMatrixType vypocitajChybovuMaticu(oll::LabelImageType::Pointer classifiedRaster, oll::VectorDataType::Pointer groundTruthVector, std::string classAttributeName)
+oll::confMatData vypocitajChybovuMaticu(oll::LabelImageType::Pointer classifiedRaster,
+                                                oll::VectorDataType::Pointer groundTruthVector, std::string classAttributeName)
 {
     // vector data reprojection to source image projection
     typedef otb::VectorDataIntoImageProjectionFilter<VectorDataType, LabelImageType> VectorDataReprojectionType;
@@ -207,6 +197,7 @@ oll::ConfusionMatrixType vypocitajChybovuMaticu(oll::LabelImageType::Pointer cla
     vdReproj->Update();
 
     // LabelImageType to VectorImageType
+    // TODO: zmeň na Cast
     oll::LabelImageListType::Pointer imageList = oll::LabelImageListType::New();
     imageList->PushBack(classifiedRaster);
     oll::ImageListToVectorImageFilterType::Pointer imageListToVectorImage = oll::ImageListToVectorImageFilterType::New();
@@ -215,8 +206,7 @@ oll::ConfusionMatrixType vypocitajChybovuMaticu(oll::LabelImageType::Pointer cla
     classifiedVectorRaster->Update();
 
     // transforming training samples into samples
-    typedef otb::ListSampleGenerator<VectorImageType, VectorDataType> ListSampleGeneratorType;
-    ListSampleGeneratorType::Pointer sampleGenerator = ListSampleGeneratorType::New();
+    oll::ListSampleGeneratorType::Pointer sampleGenerator = ListSampleGeneratorType::New();
     sampleGenerator->SetInput(classifiedVectorRaster);
     sampleGenerator->SetInputVectorData(groundTruthVector);
     sampleGenerator->SetClassKey(classAttributeName);
@@ -225,15 +215,40 @@ oll::ConfusionMatrixType vypocitajChybovuMaticu(oll::LabelImageType::Pointer cla
     sampleGenerator->Update();
 
     // confusion matrix computation
-    typedef otb::ConfusionMatrixCalculator<ListSampleGeneratorType::ListLabelType, ListSampleGeneratorType::ListSampleType> ConfusionMatrixCalculatorType;
-    ConfusionMatrixCalculatorType::Pointer cm = ConfusionMatrixCalculatorType::New();
+    oll::ConfusionMatrixCalculatorType::Pointer cm = oll::ConfusionMatrixCalculatorType::New();
     cm->SetReferenceLabels(sampleGenerator->GetValidationListLabel());
     cm->SetProducedLabels(sampleGenerator->GetValidationListSample());
     cm->Compute();
-    std::cout << "Kappa: " << cm->GetKappaIndex() << std::endl <<
-        "Overal accuracy: " << cm->GetOverallAccuracy() << std::endl <<
-        "Počet vzoriek: " << cm->GetNumberOfSamples() << std::endl;
-    return cm->GetConfusionMatrix();
+
+    oll::confMatData output;
+    output.mapOfClasses = cm->GetMapOfClasses();
+    output.confMat = cm->GetConfusionMatrix();
+    return output;
+}
+
+void dsf(oll::LabelImageListType::Pointer classifiedImages, std::vector<oll::ConfusionMatrixType> &matrices)
+{
+    // confusion matrices to masses of belief and typedefs for dsfusion
+    oll::ConfusionMatrixToMassOfBeliefType::Pointer cm2mb = oll::ConfusionMatrixToMassOfBeliefType::New();
+    oll::ConfusionMatrixToMassOfBeliefType::MassOfBeliefDefinitionMethod mbDef = oll::ConfusionMatrixToMassOfBeliefType::PRECISION;
+    oll::DSFusionOfClassifiersImageFilterType::Pointer dsfusion = oll::DSFusionOfClassifiersImageFilterType::New();
+    oll::DSFusionOfClassifiersImageFilterType::VectorOfMapOfMassesOfBeliefType massesOfBelief;
+
+    for (unsigned int i = 0; i < matrices.size(); ++i)
+    {
+        oll::ConfusionMatrixType confusionMatrix = matrices[i];
+        oll::MapOfClassesType mapOfClasses;
+        for (unsigned int j = 0; j < confusionMatrix.Rows(); ++j)
+        {
+            // mapOfClasses.insert(j);
+        }
+
+
+        cm2mb->SetConfusionMatrix(confusionMatrix);
+        cm2mb->SetDefinitionMethod(mbDef);
+        cm2mb->Update();
+    }
+
 }
 
 void ulozRaster(oll::LabelImageType::Pointer raster, std::string outputFile)

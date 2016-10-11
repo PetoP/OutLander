@@ -30,7 +30,7 @@ int main()
     oll::VectorDataType::Pointer groundTruthVector = oll::VectorDataType::New();
     oll::loadVector(groundTruthVector, groundTruth);
     // image training
-    oll::train(landsatImage, trainingSites, "/home/peter/modelDT.txt", classAtribure, oll::desicionTree);
+    // oll::train(landsatImage, trainingSites, "/home/peter/modelDT.txt", classAtribure, oll::desicionTree);
     // oll::train(landsatImage, trainingSites, "/home/peter/modelGBT.txt", classAtribure, oll::gradientBoostedTree);
     // oll::train(landsatImage, trainingSites, "/home/peter/modelLibSVM.txt", classAtribure, oll::libSVM);
 
@@ -50,20 +50,28 @@ int main()
     oll::loadRaster(GBTClassified, "/home/peter/classified_GBT.tif");
     oll::loadRaster(LibSVMClassified, "/home/peter/classified_SVM.tif");
 
-    // training sites to raster
-    oll::LabelImageType::Pointer trainingSitesRaster = oll::LabelImageType::New();
-    oll::trainingSitesToRaster(trainingSites, trainingSitesRaster, landsatImage, classAtribure);
+    // confusion matrices computation
+    oll::ConfusionMatrixType DTcm = oll::vypocitajChybovuMaticu(DTClassified, groundTruthVector, classAtribure);
+    oll::ConfusionMatrixType GBTcm = oll::vypocitajChybovuMaticu(GBTClassified, groundTruthVector, classAtribure);
+    oll::ConfusionMatrixType LibSVMcm = oll::vypocitajChybovuMaticu(LibSVMClassified, groundTruthVector, classAtribure);
 
-    oll::ConfusionMatrixType cm = oll::vypocitajChybovuMaticu(LibSVMClassified, groundTruthVector, classAtribure);
+    // for (unsigned int i = 0; i < cm.Rows(); ++i)
+    // {
+    //     for (unsigned int j = 0; j < cm.Cols(); ++j)
+    //     {
+    //         std::cout << cm.operator()(i, j) << " ";
+    //     }
+    //     std::cout << std::endl;
+    // }
 
-    for (unsigned int i = 0; i < cm.Rows(); ++i)
-    {
-        for (unsigned int j = 0; j < cm.Cols(); ++j)
-        {
-            std::cout << cm.operator()(i, j) << " ";
-        }
-        std::cout << std::endl;
-    }
+    std::vector<oll::ConfusionMatrixType> matrices;
+    oll::LabelImageListType::Pointer classifiedImages = oll::LabelImageListType::New();
+    matrices.push_back(DTcm);
+    classifiedImages->PushBack(DTClassified);
+    matrices.push_back(GBTcm);
+    classifiedImages->PushBack(GBTClassified);
+    matrices.push_back(LibSVMcm);
+    classifiedImages->PushBack(LibSVMClassified);
 
     return 1;
 }
