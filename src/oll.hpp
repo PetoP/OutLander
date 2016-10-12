@@ -5,6 +5,7 @@
 #include <ITK-4.10/itkVariableSizeMatrix.h>
 
 #include <otbConfusionMatrixCalculator.h>
+#include <otbConfusionMatrixMeasurements.h>
 #include <otbConfusionMatrixToMassOfBelief.h>
 #include <otbDSFusionOfClassifiersImageFilter.h>
 #include <otbDecisionTreeMachineLearningModel.h>
@@ -56,10 +57,13 @@ typedef otb::VectorDataToLabelImageFilter<VectorDataType, LabelImageType> Vector
 typedef otb::VectorDataIntoImageProjectionFilter<VectorDataType, ImageType> VectorDataReprojectionType;
 typedef otb::ListSampleGenerator<VectorImageType, VectorDataType> ListSampleGeneratorType;
 typedef otb::ConfusionMatrixCalculator<ListSampleGeneratorType::ListLabelType, ListSampleGeneratorType::ListSampleType>
-        ConfusionMatrixCalculatorType;
+    ConfusionMatrixCalculatorType;
+typedef otb::ConfusionMatrixMeasurements<ConfusionMatrixType, LabelPixelType> ConfusionMatrixMeasurementsType;
+
 // struct for recieving data from vypocitajChybovuMaticu
-typedef struct {
-    ConfusionMatrixType confMat;
+typedef struct
+{
+    ConfusionMatrixCalculatorType::ConfusionMatrixType confMat;
     ConfusionMatrixCalculatorType::MapOfClassesType mapOfClasses;
 } confMatData;
 
@@ -89,7 +93,9 @@ void classify(oll::ImageType::Pointer image, std::string inputModel, oll::LabelI
 void ulozRaster(oll::LabelImageType::Pointer raster, std::string outputFile);
 void ulozRaster(oll::ImageType::Pointer raster, std::string outputFile);
 confMatData vypocitajChybovuMaticu(oll::LabelImageType::Pointer classifiedRaster, oll::VectorDataType::Pointer groundTruthVector,
-                                           std::string classAttributeName);
+                                   std::string classAttributeName);
+void dsf(oll::LabelImageListType::Pointer classifiedImages, std::vector<oll::ConfusionMatrixType> &matrices,
+         std::vector<oll::ConfusionMatrixCalculatorType::MapOfClassesType> &mapOfClasses);
 }
 
 #endif

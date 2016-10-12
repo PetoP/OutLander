@@ -184,8 +184,8 @@ void classify(oll::ImageType::Pointer image, std::string inputModel, oll::LabelI
     outputRaster->Graft(classifier->GetOutput());
 }
 
-oll::confMatData vypocitajChybovuMaticu(oll::LabelImageType::Pointer classifiedRaster,
-                                                oll::VectorDataType::Pointer groundTruthVector, std::string classAttributeName)
+oll::confMatData vypocitajChybovuMaticu(oll::LabelImageType::Pointer classifiedRaster, oll::VectorDataType::Pointer groundTruthVector,
+                                        std::string classAttributeName)
 {
     // vector data reprojection to source image projection
     typedef otb::VectorDataIntoImageProjectionFilter<VectorDataType, LabelImageType> VectorDataReprojectionType;
@@ -226,7 +226,8 @@ oll::confMatData vypocitajChybovuMaticu(oll::LabelImageType::Pointer classifiedR
     return output;
 }
 
-void dsf(oll::LabelImageListType::Pointer classifiedImages, std::vector<oll::ConfusionMatrixType> &matrices)
+void dsf(oll::LabelImageListType::Pointer classifiedImages, std::vector<oll::ConfusionMatrixType> &matrices,
+         std::vector<oll::ConfusionMatrixCalculatorType::MapOfClassesType> &mapOfClasses)
 {
     // confusion matrices to masses of belief and typedefs for dsfusion
     oll::ConfusionMatrixToMassOfBeliefType::Pointer cm2mb = oll::ConfusionMatrixToMassOfBeliefType::New();
@@ -236,19 +237,17 @@ void dsf(oll::LabelImageListType::Pointer classifiedImages, std::vector<oll::Con
 
     for (unsigned int i = 0; i < matrices.size(); ++i)
     {
-        oll::ConfusionMatrixType confusionMatrix = matrices[i];
-        oll::MapOfClassesType mapOfClasses;
-        for (unsigned int j = 0; j < confusionMatrix.Rows(); ++j)
+        oll::ConfusionMatrixToMassOfBeliefType::MapOfClassesType moc;
+        for (ConfusionMatrixCalculatorType::MapOfClassesType::const_iterator mpt = mapOfClasses[i].begin(); mpt != mapOfClasses[i].end(); ++mpt)
         {
-            // mapOfClasses.insert(j);
+            moc.insert(std::pair<oll::LabelPixelType const, int>((LabelPixelType)mpt->first, (LabelPixelType)mpt->second));
         }
 
-
-        cm2mb->SetConfusionMatrix(confusionMatrix);
+        cm2mb->SetConfusionMatrix(matrices[i]);
+        cm2mb->SetMapOfClasses(moc);
         cm2mb->SetDefinitionMethod(mbDef);
         cm2mb->Update();
     }
-
 }
 
 void ulozRaster(oll::LabelImageType::Pointer raster, std::string outputFile)

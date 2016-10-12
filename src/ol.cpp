@@ -65,13 +65,19 @@ int main()
     // }
 
     std::vector<oll::ConfusionMatrixType> matrices;
+    std::vector<oll::ConfusionMatrixCalculatorType::MapOfClassesType> maps;
     oll::LabelImageListType::Pointer classifiedImages = oll::LabelImageListType::New();
     matrices.push_back(DTcm.confMat);
+    maps.push_back(DTcm.mapOfClasses);
     classifiedImages->PushBack(DTClassified);
     matrices.push_back(GBTcm.confMat);
+    maps.push_back(GBTcm.mapOfClasses);
     classifiedImages->PushBack(GBTClassified);
     matrices.push_back(LibSVMcm.confMat);
+    maps.push_back(LibSVMcm.mapOfClasses);
     classifiedImages->PushBack(LibSVMClassified);
+
+    oll::dsf(classifiedImages, matrices, maps);
 
     return 1;
 }
