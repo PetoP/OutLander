@@ -4,26 +4,27 @@
 #include <ITK-4.10/itkLabelVotingImageFilter.h>
 #include <ITK-4.10/itkVariableSizeMatrix.h>
 
-#include <otbConfusionMatrixCalculator.h>
-#include <otbConfusionMatrixMeasurements.h>
-#include <otbConfusionMatrixToMassOfBelief.h>
-#include <otbDSFusionOfClassifiersImageFilter.h>
-#include <otbDecisionTreeMachineLearningModel.h>
-#include <otbGradientBoostedTreeMachineLearningModel.h>
-#include <otbImage.h>
-#include <otbImageClassificationFilter.h>
-#include <otbImageFileReader.h>
-#include <otbImageFileWriter.h>
-#include <otbImageListToVectorImageFilter.h>
-#include <otbImageToLabelMapWithAttributesFilter.h>
-#include <otbLibSVMMachineLearningModel.h>
-#include <otbListSampleGenerator.h>
-#include <otbMachineLearningModelFactory.h>
-#include <otbVectorData.h>
-#include <otbVectorDataFileReader.h>
-#include <otbVectorDataIntoImageProjectionFilter.h>
-#include <otbVectorDataToLabelImageFilter.h>
-#include <otbVectorImage.h>
+#include <OTB-5.6/otbConfusionMatrixCalculator.h>
+#include <OTB-5.6/otbConfusionMatrixMeasurements.h>
+#include <OTB-5.6/otbConfusionMatrixToMassOfBelief.h>
+#include <OTB-5.6/otbDSFusionOfClassifiersImageFilter.h>
+#include <OTB-5.6/otbDecisionTreeMachineLearningModel.h>
+#include <OTB-5.6/otbGradientBoostedTreeMachineLearningModel.h>
+#include <OTB-5.6/otbImage.h>
+#include <OTB-5.6/otbImageClassificationFilter.h>
+#include <OTB-5.6/otbImageFileReader.h>
+#include <OTB-5.6/otbImageFileWriter.h>
+#include <OTB-5.6/otbImageListToVectorImageFilter.h>
+#include <OTB-5.6/otbImageToLabelMapWithAttributesFilter.h>
+#include <OTB-5.6/otbLibSVMMachineLearningModel.h>
+#include <OTB-5.6/otbListSampleGenerator.h>
+#include <OTB-5.6/otbMachineLearningModelFactory.h>
+#include <OTB-5.6/otbVectorData.h>
+#include <OTB-5.6/otbVectorDataFileReader.h>
+#include <OTB-5.6/otbVectorDataIntoImageProjectionFilter.h>
+#include <OTB-5.6/otbVectorDataToLabelImageFilter.h>
+#include <OTB-5.6/otbVectorImage.h>
+#include <OTB-5.6/otbDEMHandler.h>
 
 #include <fstream>
 
@@ -95,7 +96,8 @@ void ulozRaster(oll::ImageType::Pointer raster, std::string outputFile);
 confMatData vypocitajChybovuMaticu(oll::LabelImageType::Pointer classifiedRaster, oll::VectorDataType::Pointer groundTruthVector,
                                    std::string classAttributeName);
 void dsf(oll::LabelImageListType::Pointer classifiedImages, std::vector<oll::ConfusionMatrixType> &matrices,
-         std::vector<oll::ConfusionMatrixCalculatorType::MapOfClassesType> &mapOfClasses);
+         std::vector<oll::ConfusionMatrixCalculatorType::MapOfClassesType> &mapOfClasses, oll::LabelPixelType nodataLabel,
+         oll::LabelPixelType undecidedLabel, oll::LabelImageType::Pointer outputRaster);
 }
 
 #endif

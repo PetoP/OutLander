@@ -227,18 +227,19 @@ oll::confMatData vypocitajChybovuMaticu(oll::LabelImageType::Pointer classifiedR
 }
 
 void dsf(oll::LabelImageListType::Pointer classifiedImages, std::vector<oll::ConfusionMatrixType> &matrices,
-         std::vector<oll::ConfusionMatrixCalculatorType::MapOfClassesType> &mapOfClasses)
+         std::vector<oll::ConfusionMatrixCalculatorType::MapOfClassesType> &mapOfClasses, oll::LabelPixelType nodataLabel,
+         oll::LabelPixelType undecidedLabel, oll::LabelImageType::Pointer outputRaster)
 {
-    // confusion matrices to masses of belief and typedefs for dsfusion
+    // confusion matrices to masses of belief
     oll::ConfusionMatrixToMassOfBeliefType::Pointer cm2mb = oll::ConfusionMatrixToMassOfBeliefType::New();
     oll::ConfusionMatrixToMassOfBeliefType::MassOfBeliefDefinitionMethod mbDef = oll::ConfusionMatrixToMassOfBeliefType::PRECISION;
-    oll::DSFusionOfClassifiersImageFilterType::Pointer dsfusion = oll::DSFusionOfClassifiersImageFilterType::New();
     oll::DSFusionOfClassifiersImageFilterType::VectorOfMapOfMassesOfBeliefType massesOfBelief;
 
     for (unsigned int i = 0; i < matrices.size(); ++i)
     {
         oll::ConfusionMatrixToMassOfBeliefType::MapOfClassesType moc;
-        for (ConfusionMatrixCalculatorType::MapOfClassesType::const_iterator mpt = mapOfClasses[i].begin(); mpt != mapOfClasses[i].end(); ++mpt)
+        for (ConfusionMatrixCalculatorType::MapOfClassesType::const_iterator mpt = mapOfClasses[i].begin(); mpt != mapOfClasses[i].end();
+             ++mpt)
         {
             moc.insert(std::pair<oll::LabelPixelType const, int>((LabelPixelType)mpt->first, (LabelPixelType)mpt->second));
         }
@@ -247,7 +248,21 @@ void dsf(oll::LabelImageListType::Pointer classifiedImages, std::vector<oll::Con
         cm2mb->SetMapOfClasses(moc);
         cm2mb->SetDefinitionMethod(mbDef);
         cm2mb->Update();
+        massesOfBelief.push_back(cm2mb->GetMapMassOfBelief());
     }
+
+    // input images to vectorImage
+    ImageListToVectorImageFilterType::Pointer il2vi = ImageListToVectorImageFilterType::New();
+    il2vi->SetInput(classifiedImages);
+
+    // fusion
+    oll::DSFusionOfClassifiersImageFilterType::Pointer dsfusion = oll::DSFusionOfClassifiersImageFilterType::New();
+    dsfusion->SetInput(il2vi->GetOutput());
+    dsfusion->SetInputMapsOfMassesOfBelief(&massesOfBelief);
+    dsfusion->SetLabelForNoDataPixels(nodataLabel);
+    dsfusion->SetLabelForUndecidedPixels(undecidedLabel);
+    dsfusion->Update();
+    outputRaster->Graft(dsfusion->GetOutput());
 }
 
 void ulozRaster(oll::LabelImageType::Pointer raster, std::string outputFile)
@@ -271,4 +286,5 @@ void ulozRaster(oll::ImageType::Pointer raster, std::string outputFile)
     writer->SetInput(raster);
     writer->Update();
 }
+
 }
