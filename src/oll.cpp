@@ -360,7 +360,7 @@ oll::ReclassificationRulesType readReclassificationRules(std::string pathToRecla
             }
             else
             {
-                reclassificationRules.push_back(std::pair<LabelPixelType, LabelPixelType>(a, b));
+                reclassificationRules.push_back(std::pair<LabelPixelType, LabelPixelType>((LabelPixelType)a, (LabelPixelType)b));
             }
         }
     }
@@ -368,5 +368,27 @@ oll::ReclassificationRulesType readReclassificationRules(std::string pathToRecla
     rulesFile.close();
 
     return reclassificationRules;
+}
+
+void reclassifyRaster(const oll::LabelImageType::Pointer inputRaster, oll::LabelImageType::Pointer outputRaster,
+                      const oll::ReclassificationRulesType & reclassificationRules)
+{
+    outputRaster->Graft(inputRaster);
+    outputRaster->Update();
+
+    LabelImageRegionIteratorType lii(outputRaster, outputRaster->GetRequestedRegion());
+    oll::ReclassificationRulesType::const_iterator rri;
+
+    for (lii.GoToBegin(); !lii.IsAtEnd(); ++lii)
+    {
+        for (rri = reclassificationRules.begin(); rri != reclassificationRules.end(); ++rri)
+        {
+            if (lii.Value() == rri->first)
+            {
+                lii.Set(rri->second);
+            }
+        }
+
+    }
 }
 }

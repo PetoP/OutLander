@@ -85,10 +85,17 @@ int main()
 
     // oll::ulozRaster(fusedImage, "/home/peter/fused.tif");
 
-    oll::LabelImageType::Pointer podPlod = oll::LabelImageType::New();
+    oll::loadRaster(fusedImage, "/home/peter/fused.tif");
+
 
     oll::ReclassificationRulesType reclassificationRules =
         oll::readReclassificationRules(reclasRulesFile);
+
+    oll::LabelImageType::Pointer podPlod = oll::LabelImageType::New();
+
+    oll::reclassifyRaster(fusedImage, podPlod, reclassificationRules);
+
+    oll::ulozRaster(podPlod, "/home/peter/podplod.tif");
 
     return 1;
 }

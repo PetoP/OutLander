@@ -3,6 +3,7 @@
 
 #include <ITK-4.10/itkLabelVotingImageFilter.h>
 #include <ITK-4.10/itkVariableSizeMatrix.h>
+#include <ITK-4.10/itkImageRegionIterator.hxx>
 
 #include <OTB-5.6/otbConfusionMatrixCalculator.h>
 #include <OTB-5.6/otbConfusionMatrixMeasurements.h>
@@ -62,6 +63,7 @@ typedef otb::ListSampleGenerator<VectorImageType, VectorDataType> ListSampleGene
 typedef otb::ConfusionMatrixCalculator<ListSampleGeneratorType::ListLabelType, ListSampleGeneratorType::ListSampleType>
     ConfusionMatrixCalculatorType;
 typedef otb::ConfusionMatrixMeasurements<ConfusionMatrixType, LabelPixelType> ConfusionMatrixMeasurementsType;
+typedef itk::ImageRegionIterator<LabelImageType> LabelImageRegionIteratorType;
 
 // struct for recieving data from vypocitajChybovuMaticu
 typedef struct
@@ -87,7 +89,7 @@ enum trainingMethod
 };
 
 // typedef for storing reslassification rules
-typedef std::vector<std::pair<LabelPixelType, LabelPixelType> > ReclassificationRulesType;
+typedef std::vector<std::pair<LabelPixelType, LabelPixelType>> ReclassificationRulesType;
 
 bool checkIfExists(const boost::filesystem::path path, const oll::existanceCheckType mode);
 void loadRaster(oll::ImageType::Pointer raster, std::string path);
@@ -104,6 +106,8 @@ void dsf(oll::LabelImageListType::Pointer classifiedImages, std::vector<oll::Con
          std::vector<oll::ConfusionMatrixCalculatorType::MapOfClassesType> &mapOfClasses, oll::LabelPixelType nodataLabel,
          oll::LabelPixelType undecidedLabel, oll::LabelImageType::Pointer outputRaster);
 oll::ReclassificationRulesType readReclassificationRules(std::string pathToReclassificationRules);
+void reclassifyRaster(const oll::LabelImageType::Pointer inputRaster, oll::LabelImageType::Pointer outputRaster,
+                      const oll::ReclassificationRulesType & reclassificationRules);
 }
 
 #endif
