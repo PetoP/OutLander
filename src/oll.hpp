@@ -1,13 +1,16 @@
 #ifndef OUTLANDERLIBRARY_HPP_
 #define OUTLANDERLIBRARY_HPP_
 
+#include <ITK-4.10/itkAtanImageFilter.h>
+#include <ITK-4.10/itkGradientMagnitudeImageFilter.h>
+#include <ITK-4.10/itkImageRegionIterator.h>
 #include <ITK-4.10/itkLabelVotingImageFilter.h>
 #include <ITK-4.10/itkVariableSizeMatrix.h>
-#include <ITK-4.10/itkImageRegionIterator.hxx>
 
 #include <OTB-5.6/otbConfusionMatrixCalculator.h>
 #include <OTB-5.6/otbConfusionMatrixMeasurements.h>
 #include <OTB-5.6/otbConfusionMatrixToMassOfBelief.h>
+#include <OTB-5.6/otbDEMCaracteristicsExtractor.h>
 #include <OTB-5.6/otbDEMHandler.h>
 #include <OTB-5.6/otbDSFusionOfClassifiersImageFilter.h>
 #include <OTB-5.6/otbDecisionTreeMachineLearningModel.h>
@@ -21,6 +24,7 @@
 #include <OTB-5.6/otbLibSVMMachineLearningModel.h>
 #include <OTB-5.6/otbListSampleGenerator.h>
 #include <OTB-5.6/otbMachineLearningModelFactory.h>
+#include <OTB-5.6/otbMultiplyByScalarImageFilter.h>
 #include <OTB-5.6/otbVectorData.h>
 #include <OTB-5.6/otbVectorDataFileReader.h>
 #include <OTB-5.6/otbVectorDataIntoImageProjectionFilter.h>
@@ -32,6 +36,7 @@
 #include <limits>
 
 #include <boost/filesystem.hpp>
+#include <boost/math/constants/constants.hpp>
 
 #define EXIT_MESSAGE "EXITING!"
 #define FILE_DOES_NOT_EXISTS 1
@@ -64,6 +69,11 @@ typedef otb::ConfusionMatrixCalculator<ListSampleGeneratorType::ListLabelType, L
     ConfusionMatrixCalculatorType;
 typedef otb::ConfusionMatrixMeasurements<ConfusionMatrixType, LabelPixelType> ConfusionMatrixMeasurementsType;
 typedef itk::ImageRegionIterator<LabelImageType> LabelImageRegionIteratorType;
+typedef otb::Image<PixelType, DIMENSION> DEMCharImageType;
+// typedef otb::DEMCaracteristicsExtractor<DEMCharImageType, DEMCharImageType> DEMCaracteristicsExtractorType;
+typedef itk::GradientMagnitudeImageFilter<DEMCharImageType, DEMCharImageType> GradientMagnitudeImageFilterType;
+typedef itk::AtanImageFilter<DEMCharImageType, DEMCharImageType> AtanImageFilterType;
+typedef otb::MultiplyByScalarImageFilter<DEMCharImageType, DEMCharImageType> MultiplyByScalarImageFilterType;
 
 // struct for recieving data from vypocitajChybovuMaticu
 typedef struct
@@ -94,12 +104,14 @@ typedef std::vector<std::pair<LabelPixelType, LabelPixelType>> ReclassificationR
 bool checkIfExists(const boost::filesystem::path path, const oll::existanceCheckType mode);
 void loadRaster(oll::ImageType::Pointer raster, std::string path);
 void loadRaster(oll::LabelImageType::Pointer raster, std::string path);
+void loadRaster(oll::DEMCharImageType::Pointer raster, std::string path);
 void loadVector(oll::VectorDataType::Pointer vector, std::string path);
 void train(oll::ImageType::Pointer image, oll::VectorDataType::Pointer trainingSites, std::string outputModel,
            std::string classAttributeName, oll::trainingMethod trainingMethod);
 void classify(oll::ImageType::Pointer image, std::string inputModel, oll::LabelImageType::Pointer outputRaster);
 void ulozRaster(oll::LabelImageType::Pointer raster, std::string outputFile);
 void ulozRaster(oll::ImageType::Pointer raster, std::string outputFile);
+void ulozRaster(oll::DEMCharImageType::Pointer raster, std::string outputFile);
 confMatData vypocitajChybovuMaticu(oll::LabelImageType::Pointer classifiedRaster, oll::VectorDataType::Pointer groundTruthVector,
                                    std::string classAttributeName);
 void dsf(oll::LabelImageListType::Pointer classifiedImages, std::vector<oll::ConfusionMatrixType> &matrices,
@@ -107,7 +119,8 @@ void dsf(oll::LabelImageListType::Pointer classifiedImages, std::vector<oll::Con
          oll::LabelPixelType undecidedLabel, oll::LabelImageType::Pointer outputRaster);
 oll::ReclassificationRulesType readReclassificationRules(std::string pathToReclassificationRules);
 void reclassifyRaster(const oll::LabelImageType::Pointer inputRaster, oll::LabelImageType::Pointer outputRaster,
-                      const oll::ReclassificationRulesType & reclassificationRules);
+                      const oll::ReclassificationRulesType &reclassificationRules);
+void computeSlopeRaster(const oll::DEMCharImageType::Pointer demRaster, oll::DEMCharImageType::Pointer slopeRaster);
 }
 
 #endif

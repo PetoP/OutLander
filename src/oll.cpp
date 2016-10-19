@@ -79,6 +79,18 @@ void loadRaster(oll::LabelImageType::Pointer raster, std::string path)
     raster->Update();
 }
 
+void loadRaster(oll::DEMCharImageType::Pointer raster, std::string path)
+{
+    oll::checkIfExists(path, oll::inputFilePath);
+
+    typedef otb::ImageFileReader<oll::DEMCharImageType> ImageFileReaderType;
+    ImageFileReaderType::Pointer reader = ImageFileReaderType::New();
+    reader->SetFileName(path);
+    reader->Update();
+    raster->Graft(reader->GetOutput());
+    raster->Update();
+}
+
 void loadVector(oll::VectorDataType::Pointer vector, std::string path)
 {
     oll::checkIfExists(path, oll::inputFilePath);
@@ -276,6 +288,17 @@ void ulozRaster(oll::LabelImageType::Pointer raster, std::string outputFile)
     writer->Update();
 }
 
+void ulozRaster(oll::DEMCharImageType::Pointer raster, std::string outputFile)
+{
+    oll::checkIfExists(outputFile, oll::outputFilePath);
+
+    typedef otb::ImageFileWriter<DEMCharImageType> WriterType;
+    WriterType::Pointer writer = WriterType::New();
+    writer->SetFileName(outputFile);
+    writer->SetInput(raster);
+    writer->Update();
+}
+
 void ulozRaster(oll::ImageType::Pointer raster, std::string outputFile)
 {
     oll::checkIfExists(outputFile, oll::outputFilePath);
@@ -328,7 +351,7 @@ oll::ReclassificationRulesType readReclassificationRules(std::string pathToRecla
                 {
                     if (!isdigit(*it))
                     {
-                        std::cerr << "Non-digit character in input reclassification rules file at line " << lineNumber << "." << std::endl;
+                        std::cerr << "Non-digit character in first value of input reclassification rules file at line " << lineNumber << "." << std::endl;
                     }
                 }
 
@@ -337,7 +360,7 @@ oll::ReclassificationRulesType readReclassificationRules(std::string pathToRecla
                     if (!isdigit(*it))
                     {
                         // TODO vyhoď výnimku
-                        std::cerr << "Non-digit character in input reclassification rules file at line " << lineNumber << "." << std::endl;
+                        std::cerr << "Non-digit character in second value of input reclassification rules file at line " << lineNumber << "." << std::endl;
                     }
                 }
             }
@@ -391,4 +414,24 @@ void reclassifyRaster(const oll::LabelImageType::Pointer inputRaster, oll::Label
 
     }
 }
+
+void computeSlopeRaster(const oll::DEMCharImageType::Pointer demRaster, oll::DEMCharImageType::Pointer slopeRaster)
+{
+    // code borrowed and modified from OTB (otbDEMCaracteristicsExtractor.txx)
+    oll::GradientMagnitudeImageFilterType::Pointer gmif = oll::GradientMagnitudeImageFilterType::New();
+    oll::AtanImageFilterType::Pointer aif = oll::AtanImageFilterType::New();
+    oll::MultiplyByScalarImageFilterType::Pointer mbsif = oll::MultiplyByScalarImageFilterType::New();
+
+    double r2dc = 180 / boost::math::constants::pi<double>();
+
+    gmif->SetInput(demRaster);
+    aif->SetInput(gmif->GetOutput());
+    aif->Update();
+    mbsif->SetInput(aif->GetOutput());
+    mbsif->SetCoef(r2dc);
+    mbsif->Update();
+
+    slopeRaster->Graft(mbsif->GetOutput());
+}
+
 }
