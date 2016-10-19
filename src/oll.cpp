@@ -111,7 +111,7 @@ void train(oll::ImageType::Pointer image, oll::VectorDataType::Pointer trainingS
     sampleGenerator->SetInput(image);
     sampleGenerator->SetInputVectorData(trainingSites);
     sampleGenerator->SetClassKey(classAttributeName);
-    sampleGenerator->SetBoundByMin(false);
+    // sampleGenerator->SetBoundByMin(false);
 
     sampleGenerator->Update();
 
@@ -287,4 +287,86 @@ void ulozRaster(oll::ImageType::Pointer raster, std::string outputFile)
     writer->Update();
 }
 
+oll::ReclassificationRulesType readReclassificationRules(std::string pathToReclassificationRules)
+{
+    std::ifstream rulesFile(pathToReclassificationRules.c_str(), std::ios::in);
+    oll::ReclassificationRulesType reclassificationRules;
+
+    unsigned long a, b;
+    std::string line, first, second;
+
+    if (!rulesFile.is_open())
+    {
+        // TODO lepšie sformuluj chybovú hlášku a vyhoď výnimku
+        std::cerr << "Unable to open file" << std::endl;
+    }
+    else
+    {
+        // iterating lines
+        int lineNumber = 0;
+        while (getline(rulesFile, line))
+        {
+            ++lineNumber;
+
+            // searching for delimiter
+            char delimiter = ' ';
+
+            // is there any delimiter?
+            if (line.find(delimiter) == std::string::npos)
+            {
+                // TODO vyhoď výnimku
+                std::cerr << "It seems there is only one number at line " << lineNumber << "!" << std::endl;
+            }
+            else
+            {
+                // spliting by first occurence of delimiter
+                first = line.substr(0, line.find(" "));
+                second = line.substr(line.find(" ") + 1, line.size());
+
+                // testing if there are only digits
+                for (std::string::const_iterator it = first.begin(); it != first.end(); ++it)
+                {
+                    if (!isdigit(*it))
+                    {
+                        std::cerr << "Non-digit character in input reclassification rules file at line " << lineNumber << "." << std::endl;
+                    }
+                }
+
+                for (std::string::const_iterator it = second.begin(); it != second.end(); ++it)
+                {
+                    if (!isdigit(*it))
+                    {
+                        // TODO vyhoď výnimku
+                        std::cerr << "Non-digit character in input reclassification rules file at line " << lineNumber << "." << std::endl;
+                    }
+                }
+            }
+
+            // conversion to long to check if in range of oll::LabelPixelType
+            a = atoll(first.c_str());
+            b = atoll(second.c_str());
+
+            if (a > std::numeric_limits<oll::LabelPixelType>::max())
+            {
+                // TODO vyhoď výnimku
+                std::cerr << "First value at line " << lineNumber << " is higher than maximum label value "
+                          << std::numeric_limits<oll::LabelPixelType>::max() << "!" << std::endl;
+            }
+            else if (b > std::numeric_limits<oll::LabelPixelType>::max())
+            {
+                // TODO vyhoď výnimku
+                std::cerr << "Second value at line " << lineNumber << " is higher than maximum label value "
+                          << std::numeric_limits<oll::LabelPixelType>::max() << "!" << std::endl;
+            }
+            else
+            {
+                reclassificationRules.push_back(std::pair<LabelPixelType, LabelPixelType>(a, b));
+            }
+        }
+    }
+
+    rulesFile.close();
+
+    return reclassificationRules;
+}
 }

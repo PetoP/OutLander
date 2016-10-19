@@ -7,6 +7,7 @@
 #include <OTB-5.6/otbConfusionMatrixCalculator.h>
 #include <OTB-5.6/otbConfusionMatrixMeasurements.h>
 #include <OTB-5.6/otbConfusionMatrixToMassOfBelief.h>
+#include <OTB-5.6/otbDEMHandler.h>
 #include <OTB-5.6/otbDSFusionOfClassifiersImageFilter.h>
 #include <OTB-5.6/otbDecisionTreeMachineLearningModel.h>
 #include <OTB-5.6/otbGradientBoostedTreeMachineLearningModel.h>
@@ -24,9 +25,10 @@
 #include <OTB-5.6/otbVectorDataIntoImageProjectionFilter.h>
 #include <OTB-5.6/otbVectorDataToLabelImageFilter.h>
 #include <OTB-5.6/otbVectorImage.h>
-#include <OTB-5.6/otbDEMHandler.h>
 
 #include <fstream>
+#include <iostream>
+#include <limits>
 
 #include <boost/filesystem.hpp>
 
@@ -84,6 +86,9 @@ enum trainingMethod
     desicionTree
 };
 
+// typedef for storing reslassification rules
+typedef std::vector<std::pair<LabelPixelType, LabelPixelType> > ReclassificationRulesType;
+
 bool checkIfExists(const boost::filesystem::path path, const oll::existanceCheckType mode);
 void loadRaster(oll::ImageType::Pointer raster, std::string path);
 void loadRaster(oll::LabelImageType::Pointer raster, std::string path);
@@ -98,6 +103,7 @@ confMatData vypocitajChybovuMaticu(oll::LabelImageType::Pointer classifiedRaster
 void dsf(oll::LabelImageListType::Pointer classifiedImages, std::vector<oll::ConfusionMatrixType> &matrices,
          std::vector<oll::ConfusionMatrixCalculatorType::MapOfClassesType> &mapOfClasses, oll::LabelPixelType nodataLabel,
          oll::LabelPixelType undecidedLabel, oll::LabelImageType::Pointer outputRaster);
+oll::ReclassificationRulesType readReclassificationRules(std::string pathToReclassificationRules);
 }
 
 #endif
