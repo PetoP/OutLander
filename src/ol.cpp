@@ -17,18 +17,18 @@ const string outputDirectory = "/home/peter/Plocha/";
 const string outputImage = outputDirectory + "L8.tif";
 
 const string demDir = "/run/media/peter/WD/ZIK/diplomovka/klasifikator/landsat_z_grassu/dem";
-const string demFile = "/run/media/peter/WD/ZIK/diplomovka/klasifikator/landsat_z_grassu/dem/SRTM.tif";
+const string demFile = "/run/media/peter/WD/ZIK/diplomovka/klasifikator/landsat_z_grassu/dem/SRTM_aligned.tif";
 const string reclasRulesFile = "/run/media/peter/WD/ZIK/diplomovka/klasifikator/landsat_z_grassu/podmienky/podplod_pokus.txt";
 
 int main()
 {
     // DEM registration
-    otb::DEMHandler::Pointer demHandler = otb::DEMHandler::Instance();
-    if (!demHandler->IsValidDEMDirectory(demDir.c_str()))
-    {
-        std::cerr << "Zlý dem dir\n";
-    }
-    demHandler->OpenDEMDirectory(demDir);
+    // otb::DEMHandler::Pointer demHandler = otb::DEMHandler::Instance();
+    // if (!demHandler->IsValidDEMDirectory(demDir.c_str()))
+    // {
+    //     std::cerr << "Zlý dem dir\n";
+    // }
+    // demHandler->OpenDEMDirectory(demDir);
 
     // input image reading
     oll::ImageType::Pointer landsatImage = oll::ImageType::New();
@@ -88,21 +88,28 @@ int main()
 
     oll::loadRaster(fusedImage, "/home/peter/fused.tif");
 
-
     oll::ReclassificationRulesType reclassificationRules =
         oll::readReclassificationRules(reclasRulesFile);
 
     oll::LabelImageType::Pointer podPlod = oll::LabelImageType::New();
 
-    // oll::reclassifyRaster(fusedImage, podPlod, reclassificationRules);
+    oll::reclassifyRaster(fusedImage, podPlod, reclassificationRules);
 
     oll::DEMCharImageType::Pointer dem = oll::DEMCharImageType::New();
     oll::DEMCharImageType::Pointer slope = oll::DEMCharImageType::New();
     oll::loadRaster(dem, demFile);
 
     oll::computeSlopeRaster(dem, slope);
+    // oll::ulozRaster(slope, "/home/peter/slope.tif");
 
-    oll::ulozRaster(slope, "/home/peter/slope.tif");
+    oll::LabelImageType::Pointer podSklon = oll::LabelImageType::New();
+    oll::podSklon(podPlod, slope, podSklon, 5);
+
+    // oll::ulozRaster(podSklon, "/home/peter/podSklon.tif");
+
+    oll::LabelImageType::Pointer podRozloh = oll::LabelImageType::New();
+    oll::podRozloh(podSklon, podRozloh, 500);
+    oll::ulozRaster(podSklon, "/home/peter/podRozloh.tif");
 
     return 1;
 }

@@ -16,11 +16,14 @@
 #include <OTB-5.6/otbDecisionTreeMachineLearningModel.h>
 #include <OTB-5.6/otbGradientBoostedTreeMachineLearningModel.h>
 #include <OTB-5.6/otbImage.h>
+#include <OTB-5.6/otbVectorImage.h>
 #include <OTB-5.6/otbImageClassificationFilter.h>
 #include <OTB-5.6/otbImageFileReader.h>
 #include <OTB-5.6/otbImageFileWriter.h>
 #include <OTB-5.6/otbImageListToVectorImageFilter.h>
+#include <OTB-5.6/otbImageMetadataInterfaceBase.h>
 #include <OTB-5.6/otbImageToLabelMapWithAttributesFilter.h>
+#include <OTB-5.6/otbLabelImageToVectorDataFilter.h>
 #include <OTB-5.6/otbLibSVMMachineLearningModel.h>
 #include <OTB-5.6/otbListSampleGenerator.h>
 #include <OTB-5.6/otbMachineLearningModelFactory.h>
@@ -29,11 +32,16 @@
 #include <OTB-5.6/otbVectorDataFileReader.h>
 #include <OTB-5.6/otbVectorDataIntoImageProjectionFilter.h>
 #include <OTB-5.6/otbVectorDataToLabelImageFilter.h>
-#include <OTB-5.6/otbVectorImage.h>
+#include <OTB-5.6/otbLabelImageToOGRDataSourceFilter.h>
+#include <OTB-5.6/otbLabelImageToOGRDataSourceFilter.h>
+#include <OTB-5.6/otbOGRDataSourceToLabelImageFilter.h>
+#include <OTB-5.6/otbOGRDataSourceWrapper.h>
 
 #include <fstream>
 #include <iostream>
 #include <limits>
+
+#include <ogrsf_frmts.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/math/constants/constants.hpp>
@@ -70,10 +78,15 @@ typedef otb::ConfusionMatrixCalculator<ListSampleGeneratorType::ListLabelType, L
 typedef otb::ConfusionMatrixMeasurements<ConfusionMatrixType, LabelPixelType> ConfusionMatrixMeasurementsType;
 typedef itk::ImageRegionIterator<LabelImageType> LabelImageRegionIteratorType;
 typedef otb::Image<PixelType, DIMENSION> DEMCharImageType;
-// typedef otb::DEMCaracteristicsExtractor<DEMCharImageType, DEMCharImageType> DEMCaracteristicsExtractorType;
+typedef itk::ImageRegionConstIterator<DEMCharImageType> DEMCharImageRegionConstIteratorType;
 typedef itk::GradientMagnitudeImageFilter<DEMCharImageType, DEMCharImageType> GradientMagnitudeImageFilterType;
 typedef itk::AtanImageFilter<DEMCharImageType, DEMCharImageType> AtanImageFilterType;
 typedef otb::MultiplyByScalarImageFilter<DEMCharImageType, DEMCharImageType> MultiplyByScalarImageFilterType;
+typedef otb::ImageMetadataInterfaceBase::VectorType GeoTransformType;
+// typedef otb::LabelImageToVectorDataFilter<LabelImageType, PixelType> LabelImageToVectorDataFilter;
+// typedef otb::VectorDataToLabelImageFilter<VectorDataType, LabelImageType> VectorDataToLabelImageFilterType;
+typedef otb::LabelImageToOGRDataSourceFilter<LabelImageType> LabelImageToOGRDataSourceFilterType;
+typedef otb::OGRDataSourceToLabelImageFilter<LabelImageType> OGRDataSourceToLabelImageFilter;
 
 // struct for recieving data from vypocitajChybovuMaticu
 typedef struct
@@ -121,6 +134,9 @@ oll::ReclassificationRulesType readReclassificationRules(std::string pathToRecla
 void reclassifyRaster(const oll::LabelImageType::Pointer inputRaster, oll::LabelImageType::Pointer outputRaster,
                       const oll::ReclassificationRulesType &reclassificationRules);
 void computeSlopeRaster(const oll::DEMCharImageType::Pointer demRaster, oll::DEMCharImageType::Pointer slopeRaster);
+void podSklon(const oll::LabelImageType::Pointer podPlodRaster, const oll::DEMCharImageType::Pointer slopeRaster,
+              oll::LabelImageType::Pointer outputRaster, oll::PixelType hranicnySklon);
+void podRozloh(const oll::LabelImageType::Pointer podSklon, oll::LabelImageType::Pointer outputRaster, float hranicnaVelkost);
 }
 
 #endif

@@ -351,7 +351,8 @@ oll::ReclassificationRulesType readReclassificationRules(std::string pathToRecla
                 {
                     if (!isdigit(*it))
                     {
-                        std::cerr << "Non-digit character in first value of input reclassification rules file at line " << lineNumber << "." << std::endl;
+                        std::cerr << "Non-digit character in first value of input reclassification rules file at line " << lineNumber << "."
+                                  << std::endl;
                     }
                 }
 
@@ -360,7 +361,8 @@ oll::ReclassificationRulesType readReclassificationRules(std::string pathToRecla
                     if (!isdigit(*it))
                     {
                         // TODO vyhoď výnimku
-                        std::cerr << "Non-digit character in second value of input reclassification rules file at line " << lineNumber << "." << std::endl;
+                        std::cerr << "Non-digit character in second value of input reclassification rules file at line " << lineNumber
+                                  << "." << std::endl;
                     }
                 }
             }
@@ -394,12 +396,12 @@ oll::ReclassificationRulesType readReclassificationRules(std::string pathToRecla
 }
 
 void reclassifyRaster(const oll::LabelImageType::Pointer inputRaster, oll::LabelImageType::Pointer outputRaster,
-                      const oll::ReclassificationRulesType & reclassificationRules)
+                      const oll::ReclassificationRulesType &reclassificationRules)
 {
     outputRaster->Graft(inputRaster);
     outputRaster->Update();
 
-    LabelImageRegionIteratorType lii(outputRaster, outputRaster->GetRequestedRegion());
+    oll::LabelImageRegionIteratorType lii(outputRaster, outputRaster->GetRequestedRegion());
     oll::ReclassificationRulesType::const_iterator rri;
 
     for (lii.GoToBegin(); !lii.IsAtEnd(); ++lii)
@@ -411,12 +413,14 @@ void reclassifyRaster(const oll::LabelImageType::Pointer inputRaster, oll::Label
                 lii.Set(rri->second);
             }
         }
-
     }
 }
 
 void computeSlopeRaster(const oll::DEMCharImageType::Pointer demRaster, oll::DEMCharImageType::Pointer slopeRaster)
 {
+    slopeRaster->CopyInformation(demRaster);
+    slopeRaster->Update();
+
     // code borrowed and modified from OTB (otbDEMCaracteristicsExtractor.txx)
     oll::GradientMagnitudeImageFilterType::Pointer gmif = oll::GradientMagnitudeImageFilterType::New();
     oll::AtanImageFilterType::Pointer aif = oll::AtanImageFilterType::New();
@@ -432,6 +436,59 @@ void computeSlopeRaster(const oll::DEMCharImageType::Pointer demRaster, oll::DEM
     mbsif->Update();
 
     slopeRaster->Graft(mbsif->GetOutput());
+    slopeRaster->SetProjectionRef(demRaster->GetProjectionRef());
 }
 
+void podSklon(const oll::LabelImageType::Pointer podPlodRaster, const oll::DEMCharImageType::Pointer slopeRaster,
+              oll::LabelImageType::Pointer outputRaster, oll::PixelType hranicnySklon)
+{
+    outputRaster->Graft(podPlodRaster);
+    outputRaster->Update();
+
+    oll::LabelImageRegionIteratorType lii(outputRaster, outputRaster->GetRequestedRegion());
+    oll::DEMCharImageRegionConstIteratorType dii(slopeRaster, slopeRaster->GetRequestedRegion());
+
+    for (lii.GoToBegin(), dii.GoToBegin(); !lii.IsAtEnd(); ++lii, ++dii)
+    {
+        if (dii.Value() >= hranicnySklon && lii.Value() == 1)
+        {
+            lii.Set(2);
+        }
+    }
+}
+
+void podRozloh(const oll::LabelImageType::Pointer podSklon, oll::LabelImageType::Pointer outputRaster, float hranicnaVelkost)
+{
+    outputRaster->Graft(podSklon);
+    outputRaster->Update();
+
+    oll::LabelImageToOGRDataSourceFilterType::Pointer li2vd = oll::LabelImageToOGRDataSourceFilterType::New();
+    oll::OGRDataSourceToLabelImageFilter::Pointer vd2li = oll::OGRDataSourceToLabelImageFilter::New();
+    // otb::ogr::DataSource::Pointer polygons = otb::ogr::DataSource::New();
+
+    li2vd->SetInput(podSklon);
+    li2vd->SetFieldName("val");
+
+    li2vd->Update();
+    const otb::ogr::DataSource *polygons = li2vd->GetOutput();
+    otb::ogr::Layer lyrOtb = polygons->GetLayerChecked(0);
+    OGRLayer *lyr = &(lyrOtb.ogr());
+
+    OGRFeature *pFeature;
+    lyr->ResetReading();
+    while ((pFeature = lyr->GetNextFeature()) != NULL)
+    {
+        if (pFeature->GetFieldAsInteger(0) == 1)
+        {
+            int area = ((OGRPolygon *) pFeature->GetGeometryRef())->get_Area();
+        }
+    }
+
+    vd2li->AddOGRDataSource(polygons);
+    vd2li->SetBurnAttribute("val");
+    vd2li->SetOutputParametersFromImage(outputRaster);
+    vd2li->Update();
+
+    outputRaster->Graft(vd2li->GetOutput());
+}
 }
