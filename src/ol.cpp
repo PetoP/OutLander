@@ -108,8 +108,9 @@ int main()
     // oll::ulozRaster(podSklon, "/home/peter/podSklon.tif");
 
     oll::LabelImageType::Pointer podRozloh = oll::LabelImageType::New();
-    oll::podRozloh(podSklon, podRozloh, 500);
-    oll::ulozRaster(podSklon, "/home/peter/podRozloh.tif");
+    // oll::podRozloh(podSklon, podRozloh, 150);
+    oll::podRozloh(fusedImage, podRozloh, 150);
+    oll::ulozRaster(podRozloh, "/home/peter/podRozloh.tif");
 
     return 1;
 }

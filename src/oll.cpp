@@ -459,34 +459,46 @@ void podSklon(const oll::LabelImageType::Pointer podPlodRaster, const oll::DEMCh
 
 void podRozloh(const oll::LabelImageType::Pointer podSklon, oll::LabelImageType::Pointer outputRaster, float hranicnaVelkost)
 {
-    outputRaster->Graft(podSklon);
-    outputRaster->Update();
+    // preparing things
+    std::string attributeName = "val";
 
+    // filters creation
     oll::LabelImageToOGRDataSourceFilterType::Pointer li2vd = oll::LabelImageToOGRDataSourceFilterType::New();
     oll::OGRDataSourceToLabelImageFilter::Pointer vd2li = oll::OGRDataSourceToLabelImageFilter::New();
-    // otb::ogr::DataSource::Pointer polygons = otb::ogr::DataSource::New();
 
+    // vectorization
     li2vd->SetInput(podSklon);
-    li2vd->SetFieldName("val");
-
+    li2vd->SetFieldName(attributeName);
     li2vd->Update();
-    const otb::ogr::DataSource *polygons = li2vd->GetOutput();
-    otb::ogr::Layer lyrOtb = polygons->GetLayerChecked(0);
-    OGRLayer *lyr = &(lyrOtb.ogr());
+
+    // getting output of vectorization
+    GDALDataset *polygons = &(const_cast<otb::ogr::DataSource *>(li2vd->GetOutput())->ogr());
+    OGRLayer *lyr = polygons->GetLayer(0);
+
+    // new vector layer
+    const char *pDriverName = "ESRI Shapefile";
+    GDALDriver *pDriver = (GDALDriver*) GDALGetDriverByName(pDriverName);
+    GDALDataset *newPolygons = pDriver->Create( "/home/peter/tren_test.shp", 0, 0, 0, GDT_Unknown, NULL );
+
 
     OGRFeature *pFeature;
     lyr->ResetReading();
     while ((pFeature = lyr->GetNextFeature()) != NULL)
     {
-        if (pFeature->GetFieldAsInteger(0) == 1)
+        if (pFeature->GetFieldAsInteger(attributeName.c_str()) == 1 && ((OGRPolygon *)pFeature->GetGeometryRef())->get_Area() < hranicnaVelkost)
         {
-            int area = ((OGRPolygon *) pFeature->GetGeometryRef())->get_Area();
+            pFeature->SetField(attributeName.c_str(), 2);
+            lyr->SetFeature(pFeature);
         }
     }
 
-    vd2li->AddOGRDataSource(polygons);
-    vd2li->SetBurnAttribute("val");
-    vd2li->SetOutputParametersFromImage(outputRaster);
+    newPolygons->CopyLayer(lyr, "tren_test");
+
+    otb::ogr::DataSource::Pointer newPolygonsOtb = otb::ogr::DataSource::New(newPolygons, otb::ogr::DataSource::Modes::Read);
+
+    vd2li->AddOGRDataSource(newPolygonsOtb);
+    vd2li->SetBurnAttribute(attributeName);
+    vd2li->SetOutputParametersFromImage(podSklon);
     vd2li->Update();
 
     outputRaster->Graft(vd2li->GetOutput());

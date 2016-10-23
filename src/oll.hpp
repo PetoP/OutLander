@@ -36,6 +36,7 @@
 #include <OTB-5.6/otbLabelImageToOGRDataSourceFilter.h>
 #include <OTB-5.6/otbOGRDataSourceToLabelImageFilter.h>
 #include <OTB-5.6/otbOGRDataSourceWrapper.h>
+#include <OTB-5.6/otbOGRFieldWrapper.h>
 
 #include <fstream>
 #include <iostream>
