@@ -16,31 +16,32 @@
 #include <OTB-5.6/otbDecisionTreeMachineLearningModel.h>
 #include <OTB-5.6/otbGradientBoostedTreeMachineLearningModel.h>
 #include <OTB-5.6/otbImage.h>
-#include <OTB-5.6/otbVectorImage.h>
 #include <OTB-5.6/otbImageClassificationFilter.h>
 #include <OTB-5.6/otbImageFileReader.h>
 #include <OTB-5.6/otbImageFileWriter.h>
 #include <OTB-5.6/otbImageListToVectorImageFilter.h>
 #include <OTB-5.6/otbImageMetadataInterfaceBase.h>
 #include <OTB-5.6/otbImageToLabelMapWithAttributesFilter.h>
+#include <OTB-5.6/otbLabelImageToOGRDataSourceFilter.h>
+#include <OTB-5.6/otbLabelImageToOGRDataSourceFilter.h>
 #include <OTB-5.6/otbLabelImageToVectorDataFilter.h>
 #include <OTB-5.6/otbLibSVMMachineLearningModel.h>
 #include <OTB-5.6/otbListSampleGenerator.h>
 #include <OTB-5.6/otbMachineLearningModelFactory.h>
 #include <OTB-5.6/otbMultiplyByScalarImageFilter.h>
+#include <OTB-5.6/otbOGRDataSourceToLabelImageFilter.h>
+#include <OTB-5.6/otbOGRDataSourceWrapper.h>
+#include <OTB-5.6/otbOGRFieldWrapper.h>
 #include <OTB-5.6/otbVectorData.h>
 #include <OTB-5.6/otbVectorDataFileReader.h>
 #include <OTB-5.6/otbVectorDataIntoImageProjectionFilter.h>
 #include <OTB-5.6/otbVectorDataToLabelImageFilter.h>
-#include <OTB-5.6/otbLabelImageToOGRDataSourceFilter.h>
-#include <OTB-5.6/otbLabelImageToOGRDataSourceFilter.h>
-#include <OTB-5.6/otbOGRDataSourceToLabelImageFilter.h>
-#include <OTB-5.6/otbOGRDataSourceWrapper.h>
-#include <OTB-5.6/otbOGRFieldWrapper.h>
+#include <OTB-5.6/otbVectorImage.h>
 
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <string.h>
 
 #include <ogrsf_frmts.h>
 

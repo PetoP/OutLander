@@ -459,8 +459,16 @@ void podSklon(const oll::LabelImageType::Pointer podPlodRaster, const oll::DEMCh
 
 void podRozloh(const oll::LabelImageType::Pointer podSklon, oll::LabelImageType::Pointer outputRaster, float hranicnaVelkost)
 {
-    // preparing things
+    // preparing stuff
     std::string attributeName = "val";
+    OGRSpatialReference *pSRS = new OGRSpatialReference(podSklon->GetProjectionRef().c_str());
+
+    // new vector dataset
+    GDALDriver *pDriver = (GDALDriver *)GDALGetDriverByName("Memory");
+    GDALDataset *newPolygons = pDriver->Create("vymazma", 0, 0, 0, GDT_Unknown, NULL);
+    OGRLayer *newLyr = newPolygons->CreateLayer("vymazma", pSRS, wkbPolygon, NULL);
+    OGRFieldDefn field("val", OFTInteger);
+    newLyr->CreateField(&field);
 
     // filters creation
     oll::LabelImageToOGRDataSourceFilterType::Pointer li2vd = oll::LabelImageToOGRDataSourceFilterType::New();
@@ -475,27 +483,24 @@ void podRozloh(const oll::LabelImageType::Pointer podSklon, oll::LabelImageType:
     GDALDataset *polygons = &(const_cast<otb::ogr::DataSource *>(li2vd->GetOutput())->ogr());
     OGRLayer *lyr = polygons->GetLayer(0);
 
-    // new vector layer
-    const char *pDriverName = "ESRI Shapefile";
-    GDALDriver *pDriver = (GDALDriver*) GDALGetDriverByName(pDriverName);
-    GDALDataset *newPolygons = pDriver->Create( "/home/peter/tren_test.shp", 0, 0, 0, GDT_Unknown, NULL );
-
-
+    // copying and modifying features
     OGRFeature *pFeature;
     lyr->ResetReading();
     while ((pFeature = lyr->GetNextFeature()) != NULL)
     {
-        if (pFeature->GetFieldAsInteger(attributeName.c_str()) == 1 && ((OGRPolygon *)pFeature->GetGeometryRef())->get_Area() < hranicnaVelkost)
+        if (pFeature->GetFieldAsInteger(attributeName.c_str()) == 1 &&
+            ((OGRPolygon *)pFeature->GetGeometryRef())->get_Area() < hranicnaVelkost)
         {
             pFeature->SetField(attributeName.c_str(), 2);
-            lyr->SetFeature(pFeature);
+        }
+        if (newLyr->CreateFeature(pFeature) != OGRERR_NONE)
+        {
+            std::cerr << "Failed to create feature FID: " << pFeature->GetFID() << std::endl;
         }
     }
 
-    newPolygons->CopyLayer(lyr, "tren_test");
-
+    // OTB OGRFeature creation and rasterization
     otb::ogr::DataSource::Pointer newPolygonsOtb = otb::ogr::DataSource::New(newPolygons, otb::ogr::DataSource::Modes::Read);
-
     vd2li->AddOGRDataSource(newPolygonsOtb);
     vd2li->SetBurnAttribute(attributeName);
     vd2li->SetOutputParametersFromImage(podSklon);

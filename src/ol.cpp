@@ -22,6 +22,7 @@ const string reclasRulesFile = "/run/media/peter/WD/ZIK/diplomovka/klasifikator/
 
 int main()
 {
+    GDALAllRegister();
     // DEM registration
     // otb::DEMHandler::Pointer demHandler = otb::DEMHandler::Instance();
     // if (!demHandler->IsValidDEMDirectory(demDir.c_str()))
@@ -108,8 +109,7 @@ int main()
     // oll::ulozRaster(podSklon, "/home/peter/podSklon.tif");
 
     oll::LabelImageType::Pointer podRozloh = oll::LabelImageType::New();
-    // oll::podRozloh(podSklon, podRozloh, 150);
-    oll::podRozloh(fusedImage, podRozloh, 150);
+    oll::podRozloh(podSklon, podRozloh, 150);
     oll::ulozRaster(podRozloh, "/home/peter/podRozloh.tif");
 
     return 1;
