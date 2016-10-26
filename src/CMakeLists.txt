@@ -11,10 +11,10 @@ MESSAGE(FATAL_ERROR
 ENDIF(OTB_FOUND)
 # SET(CMAKE_CXX_FLAGS "-std=c++14")
 
-ADD_LIBRARY(OutLanderLibrary oll.cpp)
+ADD_LIBRARY(OutLanderLibrary oll.cxx)
 TARGET_LINK_LIBRARIES(OutLanderLibrary ${OTB_LIBRARIES})
 TARGET_LINK_LIBRARIES(OutLanderLibrary gdal)
 TARGET_LINK_LIBRARIES(OutLanderLibrary boost_system)
 TARGET_LINK_LIBRARIES(OutLanderLibrary boost_filesystem)
-ADD_EXECUTABLE(OutLander ol.cpp)
+ADD_EXECUTABLE(OutLander ol.cxx)
 TARGET_LINK_LIBRARIES(OutLander OutLanderLibrary)
