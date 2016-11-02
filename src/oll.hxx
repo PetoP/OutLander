@@ -37,6 +37,7 @@
 #include <OTB-5.6/otbVectorDataIntoImageProjectionFilter.h>
 #include <OTB-5.6/otbVectorDataToLabelImageFilter.h>
 #include <OTB-5.6/otbVectorImage.h>
+#include <OTB-5.6/otbImageToVectorImageCastFilter.h>
 
 #include <fstream>
 #include <iostream>
@@ -89,6 +90,7 @@ typedef otb::ImageMetadataInterfaceBase::VectorType GeoTransformType;
 // typedef otb::VectorDataToLabelImageFilter<VectorDataType, LabelImageType> VectorDataToLabelImageFilterType;
 typedef otb::LabelImageToOGRDataSourceFilter<LabelImageType> LabelImageToOGRDataSourceFilterType;
 typedef otb::OGRDataSourceToLabelImageFilter<LabelImageType> OGRDataSourceToLabelImageFilter;
+    typedef otb ::ImageToVectorImageCastFilter<LabelImageType, VectorImageType> ImageToVectorImageCastFilterType;
 
 // struct for recieving data from vypocitajChybovuMaticu
 typedef struct

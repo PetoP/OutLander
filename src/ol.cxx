@@ -33,15 +33,15 @@ int main()
 
     // input image reading
     oll::ImageType::Pointer landsatImage = oll::ImageType::New();
-    // oll::loadRaster(landsatImage, sourceImage);
+    oll::loadRaster(landsatImage, sourceImage);
 
     // input training samples reading
     oll::VectorDataType::Pointer trainingSites = oll::VectorDataType::New();
-    // oll::loadVector(trainingSites, trainingSamples);
+    oll::loadVector(trainingSites, trainingSamples);
 
     // input ground truth vector reading
     oll::VectorDataType::Pointer groundTruthVector = oll::VectorDataType::New();
-    // oll::loadVector(groundTruthVector, groundTruth);
+    oll::loadVector(groundTruthVector, groundTruth);
 
     // image training
     // oll::train(landsatImage, trainingSites, "/home/peter/modelDT.txt", classAtribure, oll::desicionTree);
@@ -60,12 +60,12 @@ int main()
     // oll::ulozRaster(GBTClassified, "/home/peter/classified_GBT.tif");
     // oll::ulozRaster(LibSVMClassified, "/home/peter/classified_SVM.tif");
 
-    // oll::loadRaster(DTClassified, "/home/peter/classified_DT.tif");
+    oll::loadRaster(DTClassified, "/home/peter/classified_DT.tif");
     // oll::loadRaster(GBTClassified, "/home/peter/classified_GBT.tif");
     // oll::loadRaster(LibSVMClassified, "/home/peter/classified_SVM.tif");
 
     // confusion matrices computation
-    // oll::confMatData DTcm = oll::vypocitajChybovuMaticu(DTClassified, groundTruthVector, classAtribure);
+    oll::confMatData DTcm = oll::vypocitajChybovuMaticu(DTClassified, groundTruthVector, classAtribure);
     // oll::confMatData GBTcm = oll::vypocitajChybovuMaticu(GBTClassified, groundTruthVector, classAtribure);
     // oll::confMatData LibSVMcm = oll::vypocitajChybovuMaticu(LibSVMClassified, groundTruthVector, classAtribure);
 
@@ -87,30 +87,30 @@ int main()
 
     // oll::ulozRaster(fusedImage, "/home/peter/fused.tif");
 
-    oll::loadRaster(fusedImage, "/home/peter/fused.tif");
+    // oll::loadRaster(fusedImage, "/home/peter/fused.tif");
 
-    oll::ReclassificationRulesType reclassificationRules =
-        oll::readReclassificationRules(reclasRulesFile);
+    // oll::ReclassificationRulesType reclassificationRules =
+    //     oll::readReclassificationRules(reclasRulesFile);
 
-    oll::LabelImageType::Pointer podPlod = oll::LabelImageType::New();
+    // oll::LabelImageType::Pointer podPlod = oll::LabelImageType::New();
 
-    oll::reclassifyRaster(fusedImage, podPlod, reclassificationRules);
+    // oll::reclassifyRaster(fusedImage, podPlod, reclassificationRules);
 
-    oll::DEMCharImageType::Pointer dem = oll::DEMCharImageType::New();
-    oll::DEMCharImageType::Pointer slope = oll::DEMCharImageType::New();
-    oll::loadRaster(dem, demFile);
+    // oll::DEMCharImageType::Pointer dem = oll::DEMCharImageType::New();
+    // oll::DEMCharImageType::Pointer slope = oll::DEMCharImageType::New();
+    // oll::loadRaster(dem, demFile);
 
-    oll::computeSlopeRaster(dem, slope);
+    // oll::computeSlopeRaster(dem, slope);
     // oll::ulozRaster(slope, "/home/peter/slope.tif");
 
-    oll::LabelImageType::Pointer podSklon = oll::LabelImageType::New();
-    oll::podSklon(podPlod, slope, podSklon, 5);
+    // oll::LabelImageType::Pointer podSklon = oll::LabelImageType::New();
+    // oll::podSklon(podPlod, slope, podSklon, 5);
 
     // oll::ulozRaster(podSklon, "/home/peter/podSklon.tif");
 
-    oll::LabelImageType::Pointer podRozloh = oll::LabelImageType::New();
-    oll::podRozloh(podSklon, podRozloh, 150);
-    oll::ulozRaster(podRozloh, "/home/peter/podRozloh.tif");
+    // oll::LabelImageType::Pointer podRozloh = oll::LabelImageType::New();
+    // oll::podRozloh(podSklon, podRozloh, 150);
+    // oll::ulozRaster(podRozloh, "/home/peter/podRozloh.tif");
 
     return 1;
 }

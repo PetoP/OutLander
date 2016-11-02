@@ -209,15 +209,12 @@ oll::confMatData vypocitajChybovuMaticu(oll::LabelImageType::Pointer classifiedR
     vdReproj->Update();
 
     // LabelImageType to VectorImageType
-    // TODO: zmeň na Cast
-    oll::LabelImageListType::Pointer imageList = oll::LabelImageListType::New();
-    imageList->PushBack(classifiedRaster);
-    oll::ImageListToVectorImageFilterType::Pointer imageListToVectorImage = oll::ImageListToVectorImageFilterType::New();
-    imageListToVectorImage->SetInput(imageList);
-    oll::VectorImageType::Pointer classifiedVectorRaster = imageListToVectorImage->GetOutput();
+    oll::ImageToVectorImageCastFilterType::Pointer li2vi = oll::ImageToVectorImageCastFilterType::New();
+    li2vi->SetInput(classifiedRaster);
+    oll::VectorImageType::Pointer classifiedVectorRaster = li2vi->GetOutput();
     classifiedVectorRaster->Update();
 
-    // transforming training samples into samples
+    // transforming training sites into samples
     oll::ListSampleGeneratorType::Pointer sampleGenerator = ListSampleGeneratorType::New();
     sampleGenerator->SetInput(classifiedVectorRaster);
     sampleGenerator->SetInputVectorData(groundTruthVector);
