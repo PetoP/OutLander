@@ -16,7 +16,7 @@ const string classAtribure = "plod_id";
 const string outputDirectory = "/home/peter/Plocha/";
 const string outputImage = outputDirectory + "L8.tif";
 
-const string demDir = "/run/media/peter/WD/ZIK/diplomovka/klasifikator/landsat_z_grassu/dem";
+const string demDir = "/run/media/peter/WD/ZIK/diplomovka/klasifikator/landsat_z_grassu/dem/";
 const string demFile = "/run/media/peter/WD/ZIK/diplomovka/klasifikator/landsat_z_grassu/dem/SRTM_aligned.tif";
 const string reclasRulesFile = "/run/media/peter/WD/ZIK/diplomovka/klasifikator/landsat_z_grassu/podmienky/podplod_pokus.txt";
 
@@ -24,12 +24,12 @@ int main()
 {
     GDALAllRegister();
     // DEM registration
-    // otb::DEMHandler::Pointer demHandler = otb::DEMHandler::Instance();
-    // if (!demHandler->IsValidDEMDirectory(demDir.c_str()))
-    // {
-    //     std::cerr << "Zlý dem dir\n";
-    // }
-    // demHandler->OpenDEMDirectory(demDir);
+    otb::DEMHandler::Pointer demHandler = otb::DEMHandler::Instance();
+    if (!demHandler->IsValidDEMDirectory(demDir.c_str()))
+    {
+        std::cerr << "Zlý dem dir\n";
+    }
+    demHandler->OpenDEMDirectory(demDir);
 
     // input image reading
     oll::ImageType::Pointer landsatImage = oll::ImageType::New();
@@ -60,12 +60,12 @@ int main()
     // oll::ulozRaster(GBTClassified, "/home/peter/classified_GBT.tif");
     // oll::ulozRaster(LibSVMClassified, "/home/peter/classified_SVM.tif");
 
-    oll::loadRaster(DTClassified, "/home/peter/classified_DT.tif");
+    // oll::loadRaster(DTClassified, "/home/peter/classified_DT.tif");
     // oll::loadRaster(GBTClassified, "/home/peter/classified_GBT.tif");
     // oll::loadRaster(LibSVMClassified, "/home/peter/classified_SVM.tif");
 
     // confusion matrices computation
-    oll::confMatData DTcm = oll::vypocitajChybovuMaticu(DTClassified, groundTruthVector, classAtribure);
+    // oll::confMatData DTcm = oll::vypocitajChybovuMaticu(DTClassified, groundTruthVector, classAtribure);
     // oll::confMatData GBTcm = oll::vypocitajChybovuMaticu(GBTClassified, groundTruthVector, classAtribure);
     // oll::confMatData LibSVMcm = oll::vypocitajChybovuMaticu(LibSVMClassified, groundTruthVector, classAtribure);
 
@@ -87,7 +87,7 @@ int main()
 
     // oll::ulozRaster(fusedImage, "/home/peter/fused.tif");
 
-    // oll::loadRaster(fusedImage, "/home/peter/fused.tif");
+    oll::loadRaster(fusedImage, "/home/peter/fused.tif");
 
     // oll::ReclassificationRulesType reclassificationRules =
     //     oll::readReclassificationRules(reclasRulesFile);
@@ -96,9 +96,9 @@ int main()
 
     // oll::reclassifyRaster(fusedImage, podPlod, reclassificationRules);
 
-    // oll::DEMCharImageType::Pointer dem = oll::DEMCharImageType::New();
-    // oll::DEMCharImageType::Pointer slope = oll::DEMCharImageType::New();
-    // oll::loadRaster(dem, demFile);
+    oll::DEMCharImageType::Pointer dem = oll::DEMCharImageType::New();
+    oll::DEMCharImageType::Pointer slope = oll::DEMCharImageType::New();
+
 
     // oll::computeSlopeRaster(dem, slope);
     // oll::ulozRaster(slope, "/home/peter/slope.tif");
@@ -111,6 +111,11 @@ int main()
     // oll::LabelImageType::Pointer podRozloh = oll::LabelImageType::New();
     // oll::podRozloh(podSklon, podRozloh, 150);
     // oll::ulozRaster(podRozloh, "/home/peter/podRozloh.tif");
+
+    oll::DEMCharImageType::Pointer alignedDem = oll::DEMCharImageType::New();
+    oll::alignDEM(landsatImage, alignedDem);
+
+    oll::ulozRaster(alignedDem, "/home/peter/aligned.tif");
 
     return 1;
 }

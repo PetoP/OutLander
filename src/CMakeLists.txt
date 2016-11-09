@@ -1,20 +1,11 @@
 PROJECT(OutLander)
 cmake_minimum_required(VERSION 2.6)
 
-FIND_PACKAGE(OTB)
-IF(OTB_FOUND)
-INCLUDE(${OTB_USE_FILE})
-ELSE(OTB_FOUND)
-MESSAGE(FATAL_ERROR
-"Cannot build OTB project without OTB.
- Please set OTB_DIR.")
-ENDIF(OTB_FOUND)
-# SET(CMAKE_CXX_FLAGS "-std=c++14")
+ADD_LIBRARY(ol SHARED oll.cxx)
+TARGET_LINK_LIBRARIES(ol ${OTB_LIBRARIES} ${ITK_LIBRARIES} gdal boost_system boost_filesystem)
+INSTALL(FILES oll.hxx DESTINATION include)
+INSTALL(TARGETS ol DESTINATION lib)
 
-ADD_LIBRARY(OutLanderLibrary oll.cxx)
-TARGET_LINK_LIBRARIES(OutLanderLibrary ${OTB_LIBRARIES})
-TARGET_LINK_LIBRARIES(OutLanderLibrary gdal)
-TARGET_LINK_LIBRARIES(OutLanderLibrary boost_system)
-TARGET_LINK_LIBRARIES(OutLanderLibrary boost_filesystem)
-ADD_EXECUTABLE(OutLander ol.cxx)
-TARGET_LINK_LIBRARIES(OutLander OutLanderLibrary)
+ADD_EXECUTABLE(outlander ol.cxx)
+TARGET_LINK_LIBRARIES(outlander ol)
+install(TARGETS outlander DESTINATION bin)

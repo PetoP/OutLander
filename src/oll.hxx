@@ -1,49 +1,57 @@
 #ifndef OUTLANDERLIBRARY_HPP_
 #define OUTLANDERLIBRARY_HPP_
 
-#include <ITK-4.10/itkAtanImageFilter.h>
-#include <ITK-4.10/itkGradientMagnitudeImageFilter.h>
-#include <ITK-4.10/itkImageRegionIterator.h>
-#include <ITK-4.10/itkLabelVotingImageFilter.h>
-#include <ITK-4.10/itkVariableSizeMatrix.h>
+#include "itkAtanImageFilter.h"
+#include "itkGradientMagnitudeImageFilter.h"
+#include "itkImageRegionIterator.h"
+#include "itkLabelVotingImageFilter.h"
+#include "itkVariableSizeMatrix.h"
 
-#include <OTB-5.6/otbConfusionMatrixCalculator.h>
-#include <OTB-5.6/otbConfusionMatrixMeasurements.h>
-#include <OTB-5.6/otbConfusionMatrixToMassOfBelief.h>
-#include <OTB-5.6/otbDEMCaracteristicsExtractor.h>
-#include <OTB-5.6/otbDEMHandler.h>
-#include <OTB-5.6/otbDSFusionOfClassifiersImageFilter.h>
-#include <OTB-5.6/otbDecisionTreeMachineLearningModel.h>
-#include <OTB-5.6/otbGradientBoostedTreeMachineLearningModel.h>
-#include <OTB-5.6/otbImage.h>
-#include <OTB-5.6/otbImageClassificationFilter.h>
-#include <OTB-5.6/otbImageFileReader.h>
-#include <OTB-5.6/otbImageFileWriter.h>
-#include <OTB-5.6/otbImageListToVectorImageFilter.h>
-#include <OTB-5.6/otbImageMetadataInterfaceBase.h>
-#include <OTB-5.6/otbImageToLabelMapWithAttributesFilter.h>
-#include <OTB-5.6/otbLabelImageToOGRDataSourceFilter.h>
-#include <OTB-5.6/otbLabelImageToOGRDataSourceFilter.h>
-#include <OTB-5.6/otbLabelImageToVectorDataFilter.h>
-#include <OTB-5.6/otbLibSVMMachineLearningModel.h>
-#include <OTB-5.6/otbListSampleGenerator.h>
-#include <OTB-5.6/otbMachineLearningModelFactory.h>
-#include <OTB-5.6/otbMultiplyByScalarImageFilter.h>
-#include <OTB-5.6/otbOGRDataSourceToLabelImageFilter.h>
-#include <OTB-5.6/otbOGRDataSourceWrapper.h>
-#include <OTB-5.6/otbOGRFieldWrapper.h>
-#include <OTB-5.6/otbVectorData.h>
-#include <OTB-5.6/otbVectorDataFileReader.h>
-#include <OTB-5.6/otbVectorDataIntoImageProjectionFilter.h>
-#include <OTB-5.6/otbVectorDataToLabelImageFilter.h>
-#include <OTB-5.6/otbVectorImage.h>
-#include <OTB-5.6/otbImageToVectorImageCastFilter.h>
+#include "otbConfusionMatrixCalculator.h"
+#include "otbConfusionMatrixMeasurements.h"
+#include "otbConfusionMatrixToMassOfBelief.h"
+#include "otbDEMCaracteristicsExtractor.h"
+#include "otbDEMHandler.h"
+#include "otbDEMToImageGenerator.h"
+#include "otbDSFusionOfClassifiersImageFilter.h"
+#include "otbDecisionTreeMachineLearningModel.h"
+#include "otbGenericMapProjection.h"
+#include "otbGenericRSResampleImageFilter.h"
+#include "otbGradientBoostedTreeMachineLearningModel.h"
+#include "otbImage.h"
+#include "otbImageClassificationFilter.h"
+#include "otbImageFileReader.h"
+#include "otbImageFileWriter.h"
+#include "otbImageListToVectorImageFilter.h"
+#include "otbImageMetadataInterfaceBase.h"
+#include "otbImageToLabelMapWithAttributesFilter.h"
+#include "otbImageToVectorImageCastFilter.h"
+#include "otbLabelImageToOGRDataSourceFilter.h"
+#include "otbLabelImageToOGRDataSourceFilter.h"
+#include "otbLabelImageToVectorDataFilter.h"
+#include "otbLibSVMMachineLearningModel.h"
+#include "otbListSampleGenerator.h"
+#include "otbMachineLearningModelFactory.h"
+#include "otbMapProjections.h"
+#include "otbMultiplyByScalarImageFilter.h"
+#include "otbOGRDataSourceToLabelImageFilter.h"
+#include "otbOGRDataSourceWrapper.h"
+#include "otbOGRFieldWrapper.h"
+#include "otbVectorData.h"
+#include "otbVectorDataFileReader.h"
+#include "otbVectorDataIntoImageProjectionFilter.h"
+#include "otbVectorDataToLabelImageFilter.h"
+#include "otbVectorImage.h"
 
 #include <fstream>
 #include <iostream>
 #include <limits>
 #include <string.h>
 
+#include <cpl_conv.h>
+#include <cpl_string.h>
+#include <gdal_priv.h>
+#include <gdalwarper.h>
 #include <ogrsf_frmts.h>
 
 #include <boost/filesystem.hpp>
@@ -58,19 +66,25 @@
 
 namespace oll
 {
-// definície typov
-const unsigned int DIMENSION = 2;
+// definície typov pixlov
 typedef double PixelType;
 typedef unsigned short LabelPixelType;
-typedef otb::VectorImage<PixelType, DIMENSION> ImageType;
+
+// definícia typov rastrov
+const unsigned int DIMENSION = 2;
 typedef otb::Image<LabelPixelType, DIMENSION> LabelImageType;
+typedef otb::Image<PixelType, DIMENSION> DEMCharImageType;
+typedef otb::VectorImage<PixelType, DIMENSION> ImageType;
+typedef otb::VectorImage<LabelPixelType, DIMENSION> VectorImageType;
+
+// definícia vektorových dát
 typedef otb::VectorData<PixelType, DIMENSION> VectorDataType;
+
 typedef unsigned long ConfusionMatrixEltType;
 typedef itk::VariableSizeMatrix<ConfusionMatrixEltType> ConfusionMatrixType;
 typedef otb::ConfusionMatrixToMassOfBelief<ConfusionMatrixType, LabelPixelType> ConfusionMatrixToMassOfBeliefType;
 typedef ConfusionMatrixToMassOfBeliefType::MapOfClassesType MapOfClassesType;
 typedef otb::ImageList<LabelImageType> LabelImageListType;
-typedef otb::VectorImage<LabelPixelType, DIMENSION> VectorImageType;
 typedef otb::ImageListToVectorImageFilter<LabelImageListType, VectorImageType> ImageListToVectorImageFilterType;
 typedef otb::DSFusionOfClassifiersImageFilter<VectorImageType, LabelImageType> DSFusionOfClassifiersImageFilterType;
 typedef otb::VectorDataToLabelImageFilter<VectorDataType, LabelImageType> VectorDataToLabelImageFilterType;
@@ -80,7 +94,7 @@ typedef otb::ConfusionMatrixCalculator<ListSampleGeneratorType::ListLabelType, L
     ConfusionMatrixCalculatorType;
 typedef otb::ConfusionMatrixMeasurements<ConfusionMatrixType, LabelPixelType> ConfusionMatrixMeasurementsType;
 typedef itk::ImageRegionIterator<LabelImageType> LabelImageRegionIteratorType;
-typedef otb::Image<PixelType, DIMENSION> DEMCharImageType;
+
 typedef itk::ImageRegionConstIterator<DEMCharImageType> DEMCharImageRegionConstIteratorType;
 typedef itk::GradientMagnitudeImageFilter<DEMCharImageType, DEMCharImageType> GradientMagnitudeImageFilterType;
 typedef itk::AtanImageFilter<DEMCharImageType, DEMCharImageType> AtanImageFilterType;
@@ -90,7 +104,16 @@ typedef otb::ImageMetadataInterfaceBase::VectorType GeoTransformType;
 // typedef otb::VectorDataToLabelImageFilter<VectorDataType, LabelImageType> VectorDataToLabelImageFilterType;
 typedef otb::LabelImageToOGRDataSourceFilter<LabelImageType> LabelImageToOGRDataSourceFilterType;
 typedef otb::OGRDataSourceToLabelImageFilter<LabelImageType> OGRDataSourceToLabelImageFilter;
-    typedef otb ::ImageToVectorImageCastFilter<LabelImageType, VectorImageType> ImageToVectorImageCastFilterType;
+typedef otb::ImageToVectorImageCastFilter<LabelImageType, VectorImageType> ImageToVectorImageCastFilterType;
+
+// na definovanie transformácie
+// typedef otb::GenericMapProjection<otb::TransformDirection::FORWARD> GenericMapProjectionForwardType;
+
+// na transformáciu rastra
+// typedef otb::GenericRSResampleImageFilter<DEMCharImageType, DEMCharImageType> GenericRSResampleImageFilter;
+
+// na transformáciu DEM DIR do rastra (OTB špecifický prístup)
+typedef otb::DEMToImageGenerator<DEMCharImageType> DEMToImageGenerator;
 
 // struct for recieving data from vypocitajChybovuMaticu
 typedef struct
@@ -141,6 +164,7 @@ void computeSlopeRaster(const oll::DEMCharImageType::Pointer demRaster, oll::DEM
 void podSklon(const oll::LabelImageType::Pointer podPlodRaster, const oll::DEMCharImageType::Pointer slopeRaster,
               oll::LabelImageType::Pointer outputRaster, oll::PixelType hranicnySklon);
 void podRozloh(const oll::LabelImageType::Pointer podSklon, oll::LabelImageType::Pointer outputRaster, float hranicnaVelkost);
+void alignDEM(const oll::ImageType::Pointer sourceImage, oll::DEMCharImageType::Pointer alignedDem);
 }
 
 #endif

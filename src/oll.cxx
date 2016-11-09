@@ -505,4 +505,19 @@ void podRozloh(const oll::LabelImageType::Pointer podSklon, oll::LabelImageType:
 
     outputRaster->Graft(vd2li->GetOutput());
 }
+
+void alignDEM(const oll::ImageType::Pointer sourceImage, oll::DEMCharImageType::Pointer alignedDem)
+{
+    std::string dstProj = sourceImage->GetProjectionRef();
+
+    // getting DEM Raster
+    oll::DEMToImageGenerator::Pointer dig = oll::DEMToImageGenerator::New();
+    dig->SetOutputOrigin(sourceImage->GetOrigin());
+    dig->SetOutputProjectionRef(dstProj);
+    dig->SetOutputSize(sourceImage->GetRequestedRegion().GetSize());
+    dig->SetOutputSpacing(sourceImage->GetSpacing());
+    dig->Update();
+
+    alignedDem->Graft(dig->GetOutput());
+}
 }
