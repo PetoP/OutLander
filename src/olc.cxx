@@ -1,4 +1,4 @@
-#include "oll.hxx"
+#include "olcl.hxx"
 #include <boost/program_options.hpp>
 #include <iostream>
 
@@ -6,21 +6,6 @@ using std::string;
 using std::cout;
 using std::cerr;
 using std::endl;
-
-// this will be set from arguments
-const string sourceDirectory = "/run/media/peter/WD/ZIK/diplomovka/klasifikator/landsat_z_grassu/";
-// const string sourceImage = sourceDirectory + "L8.tif";
-
-// const string trainingSamples = sourceDirectory + "tren.shp";
-// const string groundTruth = sourceDirectory + "kappa.shp";
-// const string classAtribure = "plod_id";
-
-const string outputDirectory = "/home/peter/Plocha/";
-const string outputImage = outputDirectory + "L8.tif";
-
-// const string demDir = "/run/media/peter/WD/ZIK/diplomovka/klasifikator/landsat_z_grassu/dem/";
-const string demFile = "/run/media/peter/WD/ZIK/diplomovka/klasifikator/landsat_z_grassu/dem/SRTM_aligned.tif";
-// const string reclasRulesFile = "/run/media/peter/WD/ZIK/diplomovka/klasifikator/landsat_z_grassu/podmienky/podplod_pokus.txt";
 
 int main(int argc, char *argv[])
 {
@@ -51,8 +36,8 @@ int main(int argc, char *argv[])
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
-
     bool parametersOk = true;
+
     if (vm.count("help"))
     {
         cout << "Usage: " << argv[0] << usage << endl << endl << desc << endl;
@@ -97,7 +82,7 @@ int main(int argc, char *argv[])
 
     if (!parametersOk)
     {
-        std::cout << endl << "Usage: " << argv[0] << usage << endl;
+        std::cout << endl << "Use option -h [--help] for help." << endl << "Usage: " << argv[0] << usage << endl;
         return -1;
     }
 

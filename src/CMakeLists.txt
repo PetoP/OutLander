@@ -1,12 +1,20 @@
 PROJECT(OutLander)
 cmake_minimum_required(VERSION 2.6)
 
-ADD_LIBRARY(ol SHARED oll.cxx)
+# ol library
+ADD_LIBRARY(ol SHARED olcl.cxx olsl.cxx)
 TARGET_LINK_LIBRARIES(ol ${OTB_LIBRARIES} ${ITK_LIBRARIES} gdal boost_system boost_filesystem)
-INSTALL(FILES oll.hxx DESTINATION include)
+INSTALL(FILES olcl.hxx DESTINATION include)
 INSTALL(TARGETS ol DESTINATION lib)
 
-ADD_EXECUTABLE(outlander ol.cxx)
-TARGET_LINK_LIBRARIES(outlander ol)
-TARGET_LINK_LIBRARIES(outlander boost_program_options)
-install(TARGETS outlander DESTINATION bin)
+# ol classifier
+ADD_EXECUTABLE(olc  olc.cxx)
+TARGET_LINK_LIBRARIES(olc ol)
+TARGET_LINK_LIBRARIES(olc boost_program_options)
+install(TARGETS olc DESTINATION bin)
+
+# ol statist
+ADD_EXECUTABLE(ols ols.cxx)
+TARGET_LINK_LIBRARIES(ols ol)
+TARGET_LINK_LIBRARIES(ols boost_program_options)
+install(TARGETS ols DESTINATION bin)
