@@ -1,121 +1,234 @@
 #include "oll.hxx"
+#include <boost/program_options.hpp>
 #include <iostream>
 
 using std::string;
 using std::cout;
 using std::cerr;
+using std::endl;
 
 // this will be set from arguments
 const string sourceDirectory = "/run/media/peter/WD/ZIK/diplomovka/klasifikator/landsat_z_grassu/";
-const string sourceImage = sourceDirectory + "L8.tif";
+// const string sourceImage = sourceDirectory + "L8.tif";
 
-const string trainingSamples = sourceDirectory + "tren.shp";
-const string groundTruth = sourceDirectory + "kappa.shp";
-const string classAtribure = "plod_id";
+// const string trainingSamples = sourceDirectory + "tren.shp";
+// const string groundTruth = sourceDirectory + "kappa.shp";
+// const string classAtribure = "plod_id";
 
 const string outputDirectory = "/home/peter/Plocha/";
 const string outputImage = outputDirectory + "L8.tif";
 
-const string demDir = "/run/media/peter/WD/ZIK/diplomovka/klasifikator/landsat_z_grassu/dem/";
+// const string demDir = "/run/media/peter/WD/ZIK/diplomovka/klasifikator/landsat_z_grassu/dem/";
 const string demFile = "/run/media/peter/WD/ZIK/diplomovka/klasifikator/landsat_z_grassu/dem/SRTM_aligned.tif";
-const string reclasRulesFile = "/run/media/peter/WD/ZIK/diplomovka/klasifikator/landsat_z_grassu/podmienky/podplod_pokus.txt";
+// const string reclasRulesFile = "/run/media/peter/WD/ZIK/diplomovka/klasifikator/landsat_z_grassu/podmienky/podplod_pokus.txt";
 
-int main()
+int main(int argc, char *argv[])
 {
+    // CLI creation
+    namespace po = boost::program_options;
+
+    // variables to hold CLI options
+    string sourceImage, trainingSamples, groundTruth, classAtribure, demDir, reclasRulesFile, outRecl, outPodPlod, outPodSklon, outAll;
+
+    // CLI options declaration
+    po::options_description desc("Allowed options");
+    desc.add_options()("help,h", "produce help message")
+        ("isr", po::value<string>(&sourceImage), "Input multiband satellite raster data.")
+        ("its", po::value<string>(&trainingSamples), "Input training samples vector.")
+        ("igt", po::value<string>(&groundTruth), "Input ground truth vector.")
+        ("ica", po::value<string>(&classAtribure), "Class attribute name in input training samples and ground truth vectors.")
+        ("irr", po::value<string>(&reclasRulesFile), "Text file containing reclassification rules (1)")
+        ("demdir", po::value<string>(&demDir), "Directory containing SRTM hgt files.")
+        ("olr", po::value<string>(&outRecl), "Output landcover raster.")
+        ("occ", po::value<string>(&outPodPlod),"Output condition of crop raster.")
+        ("ocs", po::value<string>(&outPodSklon), "Output condition of slope raster.")
+        ("out", po::value<string>(&outAll), "Output raster with all condition applied.")
+        ;
+
+    std::string usage = " [-h] --isr --its --igt --ica --demdir [--irr] [--olr] [--occ] [--ocs]";
+
+    // CLI options handling
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm);
+
+    bool parametersOk = true;
+    if (vm.count("help"))
+    {
+        cout << "Usage: " << argv[0] << usage << endl << endl << desc << endl;
+        return 1;
+    }
+
+    if (!vm.count("isr"))
+    {
+        std::cout << "Option isr is missing!" << endl;
+        parametersOk = false;
+    }
+
+    if (!vm.count("its"))
+    {
+        std::cout << "Option its is missing!" << endl;
+        parametersOk = false;
+    }
+
+    if (!vm.count("igt"))
+    {
+        std::cout << "Option igt is missing!" << endl;
+        parametersOk = false;
+    }
+
+    if (!vm.count("ica"))
+    {
+        std::cout << "Option ica is missing!" << endl;
+        parametersOk = false;
+    }
+
+    if (!vm.count("demdir"))
+    {
+        std::cout << "Option demdir is missing!" << endl;
+        parametersOk = false;
+    }
+
+    if (!vm.count("olr") && !vm.count("occ") && !vm.count("ocs") && !vm.count("out"))
+    {
+        std::cout << "No output specified!" << endl;
+        parametersOk = false;
+    }
+
+    if (!parametersOk)
+    {
+        std::cout << endl << "Usage: " << argv[0] << usage << endl;
+        return -1;
+    }
+
     GDALAllRegister();
+
     // DEM registration
     otb::DEMHandler::Pointer demHandler = otb::DEMHandler::Instance();
     if (!demHandler->IsValidDEMDirectory(demDir.c_str()))
     {
-        std::cerr << "Zlý dem dir\n";
+        std::cerr << "Input dem directory is not usable!\n";
+        return -1;
     }
     demHandler->OpenDEMDirectory(demDir);
 
     // input image reading
-    oll::ImageType::Pointer landsatImage = oll::ImageType::New();
-    oll::loadRaster(landsatImage, sourceImage);
+    if (!oll::checkIfExists(sourceImage, oll::inputFilePath))
+    {
+        cerr << "Can't read input satellite image!" << endl;
+        return -1;
+    }
+    oll::ImageType::Pointer inputImage = oll::ImageType::New();
+    oll::loadRaster(inputImage, sourceImage);
 
     // input training samples reading
+    if (!oll::checkIfExists(trainingSamples, oll::inputFilePath))
+    {
+        cerr << "Can't read input training samples!" << endl;
+        return -1;
+    }
     oll::VectorDataType::Pointer trainingSites = oll::VectorDataType::New();
     oll::loadVector(trainingSites, trainingSamples);
 
     // input ground truth vector reading
+    if (!oll::checkIfExists(groundTruth, oll::inputFilePath))
+    {
+        cerr << "Can't read input ground truth!" << endl;
+        return -1;
+    }
     oll::VectorDataType::Pointer groundTruthVector = oll::VectorDataType::New();
     oll::loadVector(groundTruthVector, groundTruth);
 
+    if (!oll::checkIfExists(reclasRulesFile, oll::inputFilePath))
+    {
+        cerr << "Can't read input reclassification rules file!" << endl;
+        return -1;
+    }
+
+    // reading and validation of input reclassification rules
+    oll::ReclassificationRulesType reclassificationRules = oll::readReclassificationRules(reclasRulesFile);
+
     // image training
-    // oll::train(landsatImage, trainingSites, "/home/peter/modelDT.txt", classAtribure, oll::desicionTree);
-    // oll::train(landsatImage, trainingSites, "/home/peter/modelGBT.txt", classAtribure, oll::gradientBoostedTree);
-    // oll::train(landsatImage, trainingSites, "/home/peter/modelLibSVM.txt", classAtribure, oll::libSVM);
+    string modelDT = "/tmp/modelDT.txt";
+    string modelGBT = "/tmp/modelGBT.txt";
+    string modelLibSVM = "/tmp/modelLibSVM.txt";
+    oll::train(inputImage, trainingSites, modelDT, classAtribure, oll::desicionTree);
+    oll::train(inputImage, trainingSites, modelGBT, classAtribure, oll::gradientBoostedTree);
+    oll::train(inputImage, trainingSites, modelLibSVM, classAtribure, oll::libSVM);
 
     // image classification
     oll::LabelImageType::Pointer DTClassified = oll::LabelImageType::New();
     oll::LabelImageType::Pointer GBTClassified = oll::LabelImageType::New();
     oll::LabelImageType::Pointer LibSVMClassified = oll::LabelImageType::New();
-    // oll::classify(landsatImage, "/home/peter/modelDT.txt", DTClassified);
-    // oll::classify(landsatImage, "/home/peter/modelGBT.txt", GBTClassified);
-    // oll::classify(landsatImage, "/home/peter/modelLibSVM.txt", LibSVMClassified);
+    oll::classify(inputImage, modelDT, DTClassified);
+    oll::classify(inputImage, modelGBT, GBTClassified);
+    oll::classify(inputImage, modelLibSVM, LibSVMClassified);
 
     // oll::ulozRaster(DTClassified, "/home/peter/classified_DT.tif");
     // oll::ulozRaster(GBTClassified, "/home/peter/classified_GBT.tif");
     // oll::ulozRaster(LibSVMClassified, "/home/peter/classified_SVM.tif");
 
-    // oll::loadRaster(DTClassified, "/home/peter/classified_DT.tif");
-    // oll::loadRaster(GBTClassified, "/home/peter/classified_GBT.tif");
-    // oll::loadRaster(LibSVMClassified, "/home/peter/classified_SVM.tif");
-
     // confusion matrices computation
-    // oll::confMatData DTcm = oll::vypocitajChybovuMaticu(DTClassified, groundTruthVector, classAtribure);
-    // oll::confMatData GBTcm = oll::vypocitajChybovuMaticu(GBTClassified, groundTruthVector, classAtribure);
-    // oll::confMatData LibSVMcm = oll::vypocitajChybovuMaticu(LibSVMClassified, groundTruthVector, classAtribure);
+    oll::confMatData DTcm = oll::vypocitajChybovuMaticu(DTClassified, groundTruthVector, classAtribure);
+    oll::confMatData GBTcm = oll::vypocitajChybovuMaticu(GBTClassified, groundTruthVector, classAtribure);
+    oll::confMatData LibSVMcm = oll::vypocitajChybovuMaticu(LibSVMClassified, groundTruthVector, classAtribure);
 
-    // std::vector<oll::ConfusionMatrixType> matrices;
-    // std::vector<oll::ConfusionMatrixCalculatorType::MapOfClassesType> maps;
-    // oll::LabelImageListType::Pointer classifiedImages = oll::LabelImageListType::New();
-    // matrices.push_back(DTcm.confMat);
-    // maps.push_back(DTcm.mapOfClasses);
-    // classifiedImages->PushBack(DTClassified);
-    // matrices.push_back(GBTcm.confMat);
-    // maps.push_back(GBTcm.mapOfClasses);
-    // classifiedImages->PushBack(GBTClassified);
-    // matrices.push_back(LibSVMcm.confMat);
-    // maps.push_back(LibSVMcm.mapOfClasses);
-    // classifiedImages->PushBack(LibSVMClassified);
+    std::vector<oll::ConfusionMatrixType> matrices;
+    std::vector<oll::ConfusionMatrixCalculatorType::MapOfClassesType> maps;
+    oll::LabelImageListType::Pointer classifiedImages = oll::LabelImageListType::New();
+    matrices.push_back(DTcm.confMat);
+    maps.push_back(DTcm.mapOfClasses);
+    classifiedImages->PushBack(DTClassified);
+    matrices.push_back(GBTcm.confMat);
+    maps.push_back(GBTcm.mapOfClasses);
+    classifiedImages->PushBack(GBTClassified);
+    matrices.push_back(LibSVMcm.confMat);
+    maps.push_back(LibSVMcm.mapOfClasses);
+    classifiedImages->PushBack(LibSVMClassified);
 
+    // fusion of classified images
     oll::LabelImageType::Pointer fusedImage = oll::LabelImageType::New();
-    // oll::dsf(classifiedImages, matrices, maps, 0, 255, fusedImage);
+    oll::dsf(classifiedImages, matrices, maps, 0, 255, fusedImage);
 
-    // oll::ulozRaster(fusedImage, "/home/peter/fused.tif");
+    if (vm.count("olr"))
+    {
+        oll::ulozRaster(fusedImage, outRecl);
+    }
 
-    oll::loadRaster(fusedImage, "/home/peter/fused.tif");
+    // condition od crop applicaiton
+    oll::LabelImageType::Pointer podPlod = oll::LabelImageType::New();
+    oll::reclassifyRaster(fusedImage, podPlod, reclassificationRules);
 
-    // oll::ReclassificationRulesType reclassificationRules =
-    //     oll::readReclassificationRules(reclasRulesFile);
+    if (vm.count("occ"))
+    {
+        oll::ulozRaster(podPlod, outPodPlod);
+    }
 
-    // oll::LabelImageType::Pointer podPlod = oll::LabelImageType::New();
+    // condition of slope application
+    if (vm.count("ocs") || vm.count("out"))
+    {
+        oll::DEMCharImageType::Pointer alignedDem = oll::DEMCharImageType::New();
+        oll::alignDEM(inputImage, alignedDem);
 
-    // oll::reclassifyRaster(fusedImage, podPlod, reclassificationRules);
+        oll::DEMCharImageType::Pointer slope = oll::DEMCharImageType::New();
+        oll::computeSlopeRaster(alignedDem, slope);
 
-    oll::DEMCharImageType::Pointer dem = oll::DEMCharImageType::New();
-    oll::DEMCharImageType::Pointer slope = oll::DEMCharImageType::New();
+        oll::LabelImageType::Pointer podSklon = oll::LabelImageType::New();
+        oll::podSklon(podPlod, slope, podSklon, 5);
 
+        if (vm.count("ocs"))
+        {
+            oll::ulozRaster(podSklon, outPodSklon);
+        }
 
-    // oll::computeSlopeRaster(dem, slope);
-    // oll::ulozRaster(slope, "/home/peter/slope.tif");
+        // condition of area application
+        if (vm.count("out"))
+        {
+            oll::LabelImageType::Pointer podRozloh = oll::LabelImageType::New();
+            oll::podRozloh(podSklon, podRozloh, 150);
+            oll::ulozRaster(podRozloh, outAll);
+        }
+    }
 
-    // oll::LabelImageType::Pointer podSklon = oll::LabelImageType::New();
-    // oll::podSklon(podPlod, slope, podSklon, 5);
-
-    // oll::ulozRaster(podSklon, "/home/peter/podSklon.tif");
-
-    // oll::LabelImageType::Pointer podRozloh = oll::LabelImageType::New();
-    // oll::podRozloh(podSklon, podRozloh, 150);
-    // oll::ulozRaster(podRozloh, "/home/peter/podRozloh.tif");
-
-    oll::DEMCharImageType::Pointer alignedDem = oll::DEMCharImageType::New();
-    oll::alignDEM(landsatImage, alignedDem);
-
-    oll::ulozRaster(alignedDem, "/home/peter/aligned.tif");
-
-    return 1;
+    return 0;
 }

@@ -1,5 +1,5 @@
-#ifndef OUTLANDERLIBRARY_HPP_
-#define OUTLANDERLIBRARY_HPP_
+#ifndef OUTLANDERLIBRARY_HXX_
+#define OUTLANDERLIBRARY_HXX_
 
 #include "itkAtanImageFilter.h"
 #include "itkGradientMagnitudeImageFilter.h"
@@ -139,7 +139,7 @@ enum trainingMethod
 };
 
 // typedef for storing reslassification rules
-typedef std::vector<std::pair<LabelPixelType, LabelPixelType>> ReclassificationRulesType;
+typedef std::vector<std::pair<LabelPixelType, LabelPixelType> > ReclassificationRulesType;
 
 bool checkIfExists(const boost::filesystem::path path, const oll::existanceCheckType mode);
 void loadRaster(oll::ImageType::Pointer raster, std::string path);

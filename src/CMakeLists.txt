@@ -8,4 +8,5 @@ INSTALL(TARGETS ol DESTINATION lib)
 
 ADD_EXECUTABLE(outlander ol.cxx)
 TARGET_LINK_LIBRARIES(outlander ol)
+TARGET_LINK_LIBRARIES(outlander boost_program_options)
 install(TARGETS outlander DESTINATION bin)

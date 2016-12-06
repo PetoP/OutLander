@@ -10,54 +10,55 @@ bool checkIfExists(const boost::filesystem::path path, const oll::existanceCheck
     case oll::inputFilePath:
         if (!boost::filesystem::exists(path))
         {
-            std::cerr << "File " << path << " does not exists!" << std::endl << EXIT_MESSAGE << std::endl;
-            exit(FILE_DOES_NOT_EXISTS);
+            // std::cerr << "File " << path << " does not exists!" << std::endl << EXIT_MESSAGE << std::endl;
+            // exit(FILE_DOES_NOT_EXISTS);
+            return false;
         }
         if (!boost::filesystem::is_regular_file(path))
         {
-            std::cerr << path << " is not a valid file!" << std::endl << EXIT_MESSAGE << std::endl;
-            exit(PATH_IS_NOT_FILE);
+            // std::cerr << path << " is not a valid file!" << std::endl << EXIT_MESSAGE << std::endl;
+            // exit(PATH_IS_NOT_FILE);
+            return false;
         }
         return true;
-        break;
 
     // path
     case oll::folderPath:
         if (!boost::filesystem::exists(path))
         {
-            std::cerr << "Directory " << path << " does not exists!" << std::endl << EXIT_MESSAGE << std::endl;
-            exit(FILE_DOES_NOT_EXISTS);
+            // std::cerr << "Directory " << path << " does not exists!" << std::endl << EXIT_MESSAGE << std::endl;
+            // exit(FILE_DOES_NOT_EXISTS);
+            return false;
         }
         if (!boost::filesystem::is_directory(path))
         {
-            std::cerr << path << " is not a valid directory!" << std::endl << EXIT_MESSAGE << std::endl;
-            exit(PATH_IS_NOT_DIR);
+            // std::cerr << path << " is not a valid directory!" << std::endl << EXIT_MESSAGE << std::endl;
+            // exit(PATH_IS_NOT_DIR);
+            return false;
         }
         return true;
-        break;
 
     // output path (input is output file name)
     case oll::outputFilePath:
         if (!boost::filesystem::exists(path.parent_path()))
         {
-            std::cerr << "Path " << path << " does not exists!" << std::endl << EXIT_MESSAGE << std::endl;
-            exit(PATH_DOES_NOT_EXISTS);
+            // std::cerr << "Path " << path << " does not exists!" << std::endl << EXIT_MESSAGE << std::endl;
+            // exit(PATH_DOES_NOT_EXISTS);
+            return false;
         }
         if (!boost::filesystem::is_directory(path.parent_path()))
         {
-            std::cerr << path << " is not a valid directory!" << std::endl << EXIT_MESSAGE << std::endl;
-            exit(PATH_IS_NOT_DIR);
+            // std::cerr << path << " is not a valid directory!" << std::endl << EXIT_MESSAGE << std::endl;
+            // exit(PATH_IS_NOT_DIR);
+            return false;
         }
         return true;
-        break;
-    default:
-        std::cerr << "Parameter mode value " << mode << " out of range!" << std::endl << EXIT_MESSAGE << std::endl;
     }
 }
 
 void loadRaster(oll::ImageType::Pointer raster, std::string path)
 {
-    oll::checkIfExists(path, oll::inputFilePath);
+    // oll::checkIfExists(path, oll::inputFilePath);
 
     typedef otb::ImageFileReader<oll::ImageType> ImageFileReaderType;
     ImageFileReaderType::Pointer reader = ImageFileReaderType::New();
@@ -69,7 +70,7 @@ void loadRaster(oll::ImageType::Pointer raster, std::string path)
 
 void loadRaster(oll::LabelImageType::Pointer raster, std::string path)
 {
-    oll::checkIfExists(path, oll::inputFilePath);
+    // oll::checkIfExists(path, oll::inputFilePath);
 
     typedef otb::ImageFileReader<oll::LabelImageType> ImageFileReaderType;
     ImageFileReaderType::Pointer reader = ImageFileReaderType::New();
@@ -81,7 +82,7 @@ void loadRaster(oll::LabelImageType::Pointer raster, std::string path)
 
 void loadRaster(oll::DEMCharImageType::Pointer raster, std::string path)
 {
-    oll::checkIfExists(path, oll::inputFilePath);
+    // oll::checkIfExists(path, oll::inputFilePath);
 
     typedef otb::ImageFileReader<oll::DEMCharImageType> ImageFileReaderType;
     ImageFileReaderType::Pointer reader = ImageFileReaderType::New();
@@ -93,7 +94,7 @@ void loadRaster(oll::DEMCharImageType::Pointer raster, std::string path)
 
 void loadVector(oll::VectorDataType::Pointer vector, std::string path)
 {
-    oll::checkIfExists(path, oll::inputFilePath);
+    // oll::checkIfExists(path, oll::inputFilePath);
 
     typedef otb::VectorDataFileReader<oll::VectorDataType> VectorReaderType;
     VectorReaderType::Pointer vectorReader = VectorReaderType::New();
@@ -171,7 +172,7 @@ void train(oll::ImageType::Pointer image, oll::VectorDataType::Pointer trainingS
 
 void classify(oll::ImageType::Pointer image, std::string inputModel, oll::LabelImageType::Pointer outputRaster)
 {
-    oll::checkIfExists(inputModel, oll::inputFilePath);
+    // oll::checkIfExists(inputModel, oll::inputFilePath);
 
     typedef otb::ImageClassificationFilter<oll::ImageType, oll::LabelImageType> ClassificationFilterType;
     typedef ClassificationFilterType::ModelType ModelType;
@@ -276,7 +277,7 @@ void dsf(oll::LabelImageListType::Pointer classifiedImages, std::vector<oll::Con
 
 void ulozRaster(oll::LabelImageType::Pointer raster, std::string outputFile)
 {
-    oll::checkIfExists(outputFile, oll::outputFilePath);
+    // oll::checkIfExists(outputFile, oll::outputFilePath);
 
     typedef otb::ImageFileWriter<LabelImageType> WriterType;
     WriterType::Pointer writer = WriterType::New();
@@ -287,7 +288,7 @@ void ulozRaster(oll::LabelImageType::Pointer raster, std::string outputFile)
 
 void ulozRaster(oll::DEMCharImageType::Pointer raster, std::string outputFile)
 {
-    oll::checkIfExists(outputFile, oll::outputFilePath);
+    // oll::checkIfExists(outputFile, oll::outputFilePath);
 
     typedef otb::ImageFileWriter<DEMCharImageType> WriterType;
     WriterType::Pointer writer = WriterType::New();
@@ -298,7 +299,7 @@ void ulozRaster(oll::DEMCharImageType::Pointer raster, std::string outputFile)
 
 void ulozRaster(oll::ImageType::Pointer raster, std::string outputFile)
 {
-    oll::checkIfExists(outputFile, oll::outputFilePath);
+    // oll::checkIfExists(outputFile, oll::outputFilePath);
 
     typedef otb::ImageFileWriter<ImageType> WriterType;
     WriterType::Pointer writer = WriterType::New();
@@ -314,6 +315,8 @@ oll::ReclassificationRulesType readReclassificationRules(std::string pathToRecla
 
     unsigned long a, b;
     std::string line, first, second;
+
+    bool badData = false;
 
     if (!rulesFile.is_open())
     {
@@ -336,6 +339,7 @@ oll::ReclassificationRulesType readReclassificationRules(std::string pathToRecla
             {
                 // TODO vyhoď výnimku
                 std::cerr << "It seems there is only one number at line " << lineNumber << "!" << std::endl;
+                badData = true;
             }
             else
             {
@@ -360,6 +364,7 @@ oll::ReclassificationRulesType readReclassificationRules(std::string pathToRecla
                         // TODO vyhoď výnimku
                         std::cerr << "Non-digit character in second value of input reclassification rules file at line " << lineNumber
                                   << "." << std::endl;
+                        badData = true;
                     }
                 }
             }
@@ -373,12 +378,14 @@ oll::ReclassificationRulesType readReclassificationRules(std::string pathToRecla
                 // TODO vyhoď výnimku
                 std::cerr << "First value at line " << lineNumber << " is higher than maximum label value "
                           << std::numeric_limits<oll::LabelPixelType>::max() << "!" << std::endl;
+                badData = true;
             }
             else if (b > std::numeric_limits<oll::LabelPixelType>::max())
             {
                 // TODO vyhoď výnimku
                 std::cerr << "Second value at line " << lineNumber << " is higher than maximum label value "
                           << std::numeric_limits<oll::LabelPixelType>::max() << "!" << std::endl;
+                badData = true;
             }
             else
             {
@@ -388,6 +395,12 @@ oll::ReclassificationRulesType readReclassificationRules(std::string pathToRecla
     }
 
     rulesFile.close();
+
+    // TODO toto by mal riešiť hlavný program
+    if (badData)
+    {
+        exit(-1);
+    }
 
     return reclassificationRules;
 }
