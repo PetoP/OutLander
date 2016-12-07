@@ -13,13 +13,15 @@ int main(int argc, char *argv[])
     namespace po = boost::program_options;
 
     // variables to hold CLI options
-    string inTrainingSites, inSatRaster, outObjStat, outClassStat, outTraingSites, outGroundTruth;
+    string inTrainingSites, inClassAttribute, inIdAttribute, inSatRaster, outObjStat, outClassStat, outTraingSites, outGroundTruth;
 
     // CLI options declaration
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help,h", "produce help message")
         ("its", po::value<string>(&inTrainingSites), "Input training sites vector.")
+        ("ica", po::value<string>(&inClassAttribute), "Input training sites class attribute.")
+        ("iia", po::value<string>(&inIdAttribute), "Input training sites id attribute.")
         ("isr", po::value<string>(&inSatRaster), "Input satellite data raster.")
         ;
     po::variables_map vm;
@@ -54,7 +56,7 @@ int main(int argc, char *argv[])
     pRDs = oll::openRasterDs(inSatRaster.c_str());
 
     // generate object statistics
-    oll::objectStatistics(pVDs, pRDs, "/home/peter/shtat.csv");
+    oll::objectStatistics(pVDs, inClassAttribute.c_str(), inIdAttribute.c_str(), pRDs, "/home/peter/shtat.csv");
 
     return 1;
 }
