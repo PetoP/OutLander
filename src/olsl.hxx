@@ -7,14 +7,27 @@
 #include <ogrsf_frmts.h>
 #include <vector>
 
+#include <fstream>
+
 namespace oll
 {
-GDALDataset *openVectorDs(const char *fileName);
-GDALDataset *openRasterDs(const char *fileName);
-void objectStatistics(GDALDataset *trainingSites, const char *classAttribute, const char *idAttribute, GDALDataset *satelliteImage,
-                      const char *outputFile);
-bool pixelPolyGeomIntersection(OGRPolygon *polygonGeom, OGREnvelope *polygonEnvelope, double *xres, double *yres, int *width, int *height,
-                               int *pixel);
+    typedef std::vector< double > objectValuesType;
+    typedef std::map< int, std::map< int, objectValuesType > > allValuesType;
+    typedef struct
+    {
+        double avg;
+        double var;
+        double stdev;
+    } statValStructType;
+    typedef std::map< int, std::map< int, statValStructType > > statValuesType;
+
+    GDALDataset* openVectorDs(const char* fileName);
+    GDALDataset* openRasterDs(const char* fileName);
+    allValuesType readData(GDALDataset* trainingSites, const char* classAttribute, const char* idAttribute, GDALDataset* satelliteImage);
+    bool pixelPolyGeomIntersection(OGRPolygon* polygonGeom, OGREnvelope* polygonEnvelope, double* xres, double* yres, int* width,
+                                   int* pixel);
+    void writeObjStat(const allValuesType values, const char* filename);
+    double avg(const oll::objectValuesType& values);
 }
 
 #endif

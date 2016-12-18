@@ -3,3 +3,4 @@ debug/
 **flycheck
 **~undo-tree~
 **.clang-format
+/oos.csv

@@ -23,6 +23,8 @@ int main(int argc, char *argv[])
         ("ica", po::value<string>(&inClassAttribute), "Input training sites class attribute.")
         ("iia", po::value<string>(&inIdAttribute), "Input training sites id attribute.")
         ("isr", po::value<string>(&inSatRaster), "Input satellite data raster.")
+        ("oos", po::value<string>(&outObjStat), "Output object statistics.")
+        ("ocs", po::value<string>(&outClassStat), "Output class statistics.")
         ;
     po::variables_map vm;
 
@@ -55,8 +57,11 @@ int main(int argc, char *argv[])
     GDALDataset *pRDs;
     pRDs = oll::openRasterDs(inSatRaster.c_str());
 
-    // generate object statistics
-    oll::objectStatistics(pVDs, inClassAttribute.c_str(), inIdAttribute.c_str(), pRDs, "/home/peter/shtat.csv");
+    // generate statistics
+    const oll::allValuesType allValues = oll::readData(pVDs, inClassAttribute.c_str(), inIdAttribute.c_str(), pRDs);
 
-    return 1;
+    // writing statistics
+    oll::writeObjStat(allValues, outObjStat.c_str());
+
+    return 0;
 }
