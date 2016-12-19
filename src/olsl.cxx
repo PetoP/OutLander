@@ -1,5 +1,4 @@
 #include "olsl.hxx"
-#include <iostream>
 
 namespace oll
 {
@@ -33,10 +32,10 @@ namespace oll
         return pDs;
     };
 
-    oll::allValuesType readData(GDALDataset* trainingSites, const char* classAttribute, const char* idAttribute,
-                                GDALDataset* satelliteImage)
+    oll::TrainingSitesContainer readData(GDALDataset* trainingSites, const char* classAttribute, const char* idAttribute,
+                                         GDALDataset* satelliteImage)
     {
-        oll::allValuesType allValues;
+        oll::TrainingSitesContainer trainingSitesContainer;
 
         // layer reading and testing
         OGRLayer* pLyr;
@@ -99,7 +98,6 @@ namespace oll
         double* uly = geoTransform + 3;
         double* xres = geoTransform + 1;
         double* yres = geoTransform + 5;
-        // GDALDataType rasterDataType = satelliteImage->GetRasterBand(1)->GetRasterDataType();
 
         OGRFeature* pFeat;
         OGRPolygon* pFeatGeom;
@@ -108,23 +106,12 @@ namespace oll
         bool featureOutsiteRaster;
         int xofset, yofset, width, height;
         double* pRastData;
-        oll::objectValuesType values;
-
-        // output CSV preparation
-        // std::ofstream outputCSV;
-        // outputCSV.open(outputFile);
-        // outputCSV << "id";
-        // for (int band = 1; band <= bandCount; ++band)
-        // {
-        //     outputCSV << ",b" << band << "_avg";
-        // }
+        oll::PixelValuesType values;
 
         // feature iteration
         pLyr->ResetReading();
         while ((pFeat = pLyr->GetNextFeature()) != NULL)
         {
-            // outputCSV << std::endl << pFeat->GetFieldAsInteger(idFieldIndex);
-
             // feature reprojection and metadata reading
             pFeatGeom = (OGRPolygon*)pFeat->GetGeometryRef();
             pFeatGeom->transformTo(&projection);
@@ -147,6 +134,8 @@ namespace oll
 
             if (!featureOutsiteRaster)
             {
+                oll::TrainingSite trainingSite(pFeat->GetFieldAsInteger(idFieldIndex), pFeat->GetFieldAsInteger(classFieldIndex));
+
                 // croped raster dimensions
                 width = ((pFeatEnv->MaxX - pFeatEnv->MinX) / *xres) + 1;
                 height = -((pFeatEnv->MaxY - pFeatEnv->MinY) / *yres) + 1;
@@ -169,15 +158,12 @@ namespace oll
                         }
                     }
 
-                    allValues[pFeat->GetFieldAsInteger(idFieldIndex)][band] = values;
-                    // outputCSV << "," << priemer;
+                    trainingSite.addBandValues(band, values);
                 }
+                trainingSitesContainer.addTrainingSite(trainingSite);
             }
         }
-
-        // outputCSV << std::endl;
-        // outputCSV.close();
-        return allValues;
+        return trainingSitesContainer;
     };
 
     bool pixelPolyGeomIntersection(OGRPolygon* polygonGeom, OGREnvelope* polygonEnvelope, double* xres, double* yres, int* width,
@@ -195,39 +181,67 @@ namespace oll
         return polygonGeom->Intersects(new OGRPoint(x, y));
     }
 
-    double avg(const oll::objectValuesType& values)
-    {
-        double sum = 0;
-        for (double value : values)
-        {
-            sum += value;
-        }
-
-        return sum / values.size();
-    }
-
-    void writeObjStat(allValuesType values, const char* filename)
+    void writeObjStat(const TrainingSitesContainer& trainingSitesContainer, const char* filename)
     {
         // output CSV preparation
         std::ofstream outputCSV;
         outputCSV.open(filename);
-        outputCSV << "id";
-        for (int band = 1; band <= (int)values.begin()->second.size(); ++band)
+        outputCSV << "id,count";
+
+        // print headers
+        const int firstId = trainingSitesContainer.getTrainingSitesIds()[0];
+        const oll::TrainingSite& firstTrainingSite = trainingSitesContainer.getTrainingSite(firstId);
+        const oll::TrainingSite::BandsVectorType bands = firstTrainingSite.getBands();
+        for (const int& band : bands)
         {
-            outputCSV << ",b" << band << "_avg";
+            outputCSV << ",b" << band << "_avg"
+                      << ",b" << band << "_stdev";
         }
 
-        double avg;
-        for(auto const& record : values)
-        {
-            outputCSV << std::endl << record.first;
+        double avg, stdev;
 
-            for(auto const& band : record.second)
+        // iterate over training sites
+        const oll::TrainingSitesContainer::TrainingSitesType trainingSites = trainingSitesContainer.getTrainingSites();
+        for (const oll::TrainingSite& trainingSite : trainingSites)
+        {
+            outputCSV << std::endl << trainingSite.getId();
+            outputCSV << "," << trainingSite.getCoverClass();
+
+            for (const int& band : bands)
             {
-                avg = oll::avg(band.second);
-                outputCSV << "," << avg;
+                outputCSV << "," << trainingSite.getBandAvg(band) << "," << trainingSite.getBandStdev(band);
             }
         }
+
+        outputCSV << std::endl;
+        outputCSV.close();
+    }
+
+    void writeClassStat(const char* filename)
+    {
+        // output CSV preparation
+        std::ofstream outputCSV;
+        outputCSV.open(filename);
+        outputCSV << "class,count";
+        // for (int band = 1; band <= (int)classStat.begin()->second.size(); ++band)
+        // {
+        //     outputCSV << ",b" << band << "_avg"
+        //               << ",b" << band << "_stdev";
+        // }
+
+        double avg, stdev;
+        // for (auto const& record : classStat)
+        // {
+        //     outputCSV << std::endl << record.first;
+        //     outputCSV << "," << record.second.begin()->second.count;
+
+        //     for (auto const& band : record.second)
+        //     {
+        //         avg = band.second.avg;
+        //         stdev = band.second.stdev;
+        //         outputCSV << "," << avg << "," << stdev;
+        //     }
+        // }
 
         outputCSV << std::endl;
         outputCSV.close();

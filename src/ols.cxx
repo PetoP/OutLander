@@ -7,7 +7,7 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     // CLI creation
     namespace po = boost::program_options;
@@ -17,15 +17,12 @@ int main(int argc, char *argv[])
 
     // CLI options declaration
     po::options_description desc("Allowed options");
-    desc.add_options()
-        ("help,h", "produce help message")
-        ("its", po::value<string>(&inTrainingSites), "Input training sites vector.")
-        ("ica", po::value<string>(&inClassAttribute), "Input training sites class attribute.")
-        ("iia", po::value<string>(&inIdAttribute), "Input training sites id attribute.")
-        ("isr", po::value<string>(&inSatRaster), "Input satellite data raster.")
-        ("oos", po::value<string>(&outObjStat), "Output object statistics.")
-        ("ocs", po::value<string>(&outClassStat), "Output class statistics.")
-        ;
+    desc.add_options()("help,h", "produce help message")("its", po::value< string >(&inTrainingSites), "Input training sites vector.")(
+        "ica", po::value< string >(&inClassAttribute), "Input training sites class attribute.")("iia", po::value< string >(&inIdAttribute),
+                                                                                                "Input training sites id attribute.")(
+        "isr", po::value< string >(&inSatRaster),
+        "Input satellite data raster.")("oos", po::value< string >(&outObjStat),
+                                        "Output object statistics.")("ocs", po::value< string >(&outClassStat), "Output class statistics.");
     po::variables_map vm;
 
     // CLI options handling
@@ -50,18 +47,21 @@ int main(int argc, char *argv[])
     GDALAllRegister();
 
     // training sites reading
-    GDALDataset *pVDs;
+    GDALDataset* pVDs;
     pVDs = oll::openVectorDs(inTrainingSites.c_str());
 
     // satellite image reading
-    GDALDataset *pRDs;
+    GDALDataset* pRDs;
     pRDs = oll::openRasterDs(inSatRaster.c_str());
 
     // generate statistics
-    const oll::allValuesType allValues = oll::readData(pVDs, inClassAttribute.c_str(), inIdAttribute.c_str(), pRDs);
+    oll::TrainingSitesContainer trainingSitesContainer = oll::readData(pVDs, inClassAttribute.c_str(), inIdAttribute.c_str(), pRDs);
 
     // writing statistics
-    oll::writeObjStat(allValues, outObjStat.c_str());
+    oll::writeObjStat(trainingSitesContainer, outObjStat.c_str());
+
+    // write class statistics
+    // oll::writeClassStat(trainingSitesContainer, outClassStat.c_str());
 
     return 0;
 }
