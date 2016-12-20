@@ -191,7 +191,7 @@ namespace oll
         // print headers
         const int firstId = trainingSitesContainer.getTrainingSitesIds()[0];
         const oll::TrainingSite& firstTrainingSite = trainingSitesContainer.getTrainingSite(firstId);
-        const oll::TrainingSite::BandsVectorType bands = firstTrainingSite.getBands();
+        const oll::BandsVectorType bands = firstTrainingSite.getBands();
         for (const int& band : bands)
         {
             outputCSV << ",b" << band << "_avg"
@@ -205,7 +205,7 @@ namespace oll
         for (const oll::TrainingSite& trainingSite : trainingSites)
         {
             outputCSV << std::endl << trainingSite.getId();
-            outputCSV << "," << trainingSite.getCoverClass();
+            outputCSV << "," << trainingSite.getPixelCount();
 
             for (const int& band : bands)
             {
@@ -217,31 +217,28 @@ namespace oll
         outputCSV.close();
     }
 
-    void writeClassStat(const char* filename)
+    void writeClassStat(const ClassStatistics& classStatistics, const char* filename)
     {
         // output CSV preparation
         std::ofstream outputCSV;
         outputCSV.open(filename);
         outputCSV << "class,count";
-        // for (int band = 1; band <= (int)classStat.begin()->second.size(); ++band)
-        // {
-        //     outputCSV << ",b" << band << "_avg"
-        //               << ",b" << band << "_stdev";
-        // }
 
-        double avg, stdev;
-        // for (auto const& record : classStat)
-        // {
-        //     outputCSV << std::endl << record.first;
-        //     outputCSV << "," << record.second.begin()->second.count;
+        for (const int& band : classStatistics.getBands())
+        {
+            outputCSV << ",b" << band << "_avg"
+                      << ",b" << band << "_stdev";
+        }
 
-        //     for (auto const& band : record.second)
-        //     {
-        //         avg = band.second.avg;
-        //         stdev = band.second.stdev;
-        //         outputCSV << "," << avg << "," << stdev;
-        //     }
-        // }
+        for (const int& specClass : classStatistics.getSpectralClasses())
+        {
+            outputCSV << std::endl << specClass << "," << classStatistics.getPixelCount(specClass);
+
+            for (const int& band : classStatistics.getBands())
+            {
+                outputCSV << "," << classStatistics.getClassAvg(specClass, band) << "," << classStatistics.getClassStdev(specClass, band);
+            }
+        }
 
         outputCSV << std::endl;
         outputCSV.close();

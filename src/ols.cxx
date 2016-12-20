@@ -60,8 +60,11 @@ int main(int argc, char* argv[])
     // writing statistics
     oll::writeObjStat(trainingSitesContainer, outObjStat.c_str());
 
+    // compute class statistics
+    oll::ClassStatistics classStatistics(trainingSitesContainer);
+
     // write class statistics
-    // oll::writeClassStat(trainingSitesContainer, outClassStat.c_str());
+    oll::writeClassStat(classStatistics, outClassStat.c_str());
 
     return 0;
 }

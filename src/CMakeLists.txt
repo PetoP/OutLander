@@ -2,7 +2,7 @@ PROJECT(OutLander)
 cmake_minimum_required(VERSION 2.6)
 
 # ol library
-ADD_LIBRARY(ol SHARED olcl.cxx trainingSitesContainer.cxx trainingSite.cxx olsl.cxx)
+ADD_LIBRARY(ol SHARED olcl.cxx trainingSitesContainer.cxx trainingSite.cxx classStatistics.cxx olsl.cxx)
 TARGET_LINK_LIBRARIES(ol ${OTB_LIBRARIES} ${ITK_LIBRARIES} gdal boost_system boost_filesystem)
 INSTALL(FILES olcl.hxx DESTINATION include)
 INSTALL(TARGETS ol DESTINATION lib)

@@ -5,14 +5,14 @@ namespace oll
     oll::TrainingSite::TrainingSite(const int id, const int coverClass)
     {
         this->id = id;
-        this->coverClass = coverClass;
+        this->spectralClass = coverClass;
     };
 
     oll::TrainingSite::~TrainingSite()
     {
     }
 
-    void oll::TrainingSite::addBandValues(int band, PixelValuesType pixelValues)
+    void oll::TrainingSite::addBandValues(const int band, PixelValuesType pixelValues)
     {
         if (std::find(bands.begin(), bands.end(), band) == bands.end())
         {
@@ -26,7 +26,7 @@ namespace oll
         }
     };
 
-    oll::PixelValuesType oll::TrainingSite::getBandValues(int band) const
+    const oll::PixelValuesType& oll::TrainingSite::getBandValues(const int band) const
     {
         if (std::find(bands.begin(), bands.end(), band) != bands.end())
         {
@@ -34,16 +34,16 @@ namespace oll
         }
         else
         {
-            std::cerr << "Data for band " << band << " ate not stored in training site " << id << "!" << std::endl;
+            std::cerr << "Data for band " << band << " are not stored in training site " << id << "!" << std::endl;
             return PixelValuesType();
         }
     };
 
-    double oll::TrainingSite::getBandAvg(int band) const
+    double oll::TrainingSite::getBandAvg(const int band) const
     {
         if (std::find(bands.begin(), bands.end(), band) != bands.end())
         {
-            long sum = 0;
+            double sum = 0;
             for (double value : valuesPerBand.at(band))
             {
                 sum += value;
@@ -53,12 +53,12 @@ namespace oll
         }
         else
         {
-            std::cerr << "Data for band " << band << " ate not stored in training site " << id << "!" << std::endl;
+            std::cerr << "Data for band " << band << " are not stored in training site " << id << "!" << std::endl;
             return -1;
         }
     };
 
-    double oll::TrainingSite::getBandVariance(int band) const
+    double oll::TrainingSite::getBandVariance(const int band) const
     {
         if (std::find(bands.begin(), bands.end(), band) != bands.end())
         {
@@ -74,12 +74,12 @@ namespace oll
         }
         else
         {
-            std::cerr << "Data for band " << band << " ate not stored in training site " << id << "!" << std::endl;
+            std::cerr << "Data for band " << band << " are not stored in training site " << id << "!" << std::endl;
             return -1;
         }
     };
 
-    double oll::TrainingSite::getBandStdev(int band) const
+    double oll::TrainingSite::getBandStdev(const int band) const
     {
         if (std::find(bands.begin(), bands.end(), band) != bands.end())
         {
@@ -87,7 +87,7 @@ namespace oll
         }
         else
         {
-            std::cerr << "Data for band " << band << " ate not stored in training site " << id << "!" << std::endl;
+            std::cerr << "Data for band " << band << " are not stored in training site " << id << "!" << std::endl;
             return -1;
         }
     };
@@ -102,12 +102,12 @@ namespace oll
         return id;
     };
 
-    int oll::TrainingSite::getCoverClass() const
+    int oll::TrainingSite::getSpectralClass() const
     {
-        return coverClass;
+        return spectralClass;
     };
 
-    const oll::TrainingSite::BandsVectorType& oll::TrainingSite::getBands() const
+    const oll::BandsVectorType& oll::TrainingSite::getBands() const
     {
         return bands;
     }

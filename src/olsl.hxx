@@ -16,38 +16,17 @@ namespace oll
 {
     // vector for storing pixel values
     typedef std::vector< double > PixelValuesType;
-
-    // // struct for storing data per training site
-    // typedef struct
-    // {
-    //     int classId;                                    // stores training site classId
-    //     std::map< int, PixelValuesType > valuesPerBand; // stores band number and pixel values in that band
-    // } objectValuesStructType;
-
-    // // map that stores data about all training sites
-    // typedef std::map< int,                     // training site ID
-    //                   objectValuesStructType > // informations abou training site
-    //     allValuesType;
-
-    // typedef struct
-    // {
-    //     long count;
-    //     double avg;
-    //     double stdev;
-    // } statValStructType;
-
-    // typedef std::map< int, std::map< int, statValStructType > > classStatType;
+    typedef std::vector< int > BandsVectorType;
 
     // class stores data for individual training sites
     class TrainingSite
     {
       public:
         typedef std::map< int, PixelValuesType > ValuesPerBandType;
-        typedef std::vector< int > BandsVectorType;
 
       private:
         int id;                          // training site id
-        int coverClass;                  // landcover class of training site
+        int spectralClass;               // spectral class of training site
         ValuesPerBandType valuesPerBand; // pixel values per band
         BandsVectorType bands;           // bads with values
         long pixelCount;
@@ -57,13 +36,13 @@ namespace oll
         TrainingSite(const int id, const int coverClass);
         ~TrainingSite();
         void addBandValues(const int band, const PixelValuesType pixelValues); // add pixel values for band
-        PixelValuesType getBandValues(int band) const;                         // get pixel values for band
-        double getBandAvg(int band) const;                                     // get average of pixel values for band
-        double getBandVariance(int band) const;                                // get variace of pixel values for band
-        double getBandStdev(int band) const;                                   // get standard deviation of pixel values for band
+        const PixelValuesType& getBandValues(const int band) const;            // get pixel values for band
+        double getBandAvg(const int band) const;                               // get average of pixel values for band
+        double getBandVariance(const int band) const;                          // get variace of pixel values for band
+        double getBandStdev(const int band) const;                             // get standard deviation of pixel values for band
         long getPixelCount() const;                                            // get number of pixels in training site
         int getId() const;                                                     // get training site ID
-        int getCoverClass() const;                                             // get landcover class of training site
+        int getSpectralClass() const;                                          // get spectral class of training site
         const BandsVectorType& getBands() const;
     };
 
@@ -73,10 +52,12 @@ namespace oll
       public:
         typedef std::vector< TrainingSite > TrainingSitesType;
         typedef std::vector< int > TrainingSitesIdsType;
+        typedef std::vector< int > TrainingSitesSpecClassType;
 
       private:
-        TrainingSitesType trainingSites;       // stores all training sites
-        TrainingSitesIdsType trainingSitesIds; // stores all ids of training sites
+        TrainingSitesType trainingSites;            // stores all training sites
+        TrainingSitesIdsType trainingSitesIds;      // stores all ids of training sites
+        TrainingSitesSpecClassType spectralClasses; // store all unique spectral classes ids
 
       public:
         void addTrainingSite(TrainingSite trSite); // add new training site to container
@@ -85,6 +66,45 @@ namespace oll
         int getTrainingSitesCount() const;
         const TrainingSitesIdsType& getTrainingSitesIds() const;
         const TrainingSitesType& getTrainingSites() const;
+        const TrainingSitesSpecClassType& getSpectralClasses() const;
+    };
+
+    // class for calculating and storing class statistics values
+    class ClassStatistics
+    {
+      public:
+        typedef std::vector< int > SpectralClassesVectorType;
+
+      private:
+        // stores statistic values for single band
+        typedef struct
+        {
+            double avg;
+            double stdev;
+        } BandStatisticsType;
+
+        // stores all information about signe spectral class
+        typedef struct
+        {
+            long pixelCount;
+            std::map< int, BandStatisticsType > bandStatistics;
+        } BandDataType;
+
+        std::map< int, BandDataType > classStatistics;
+
+        BandsVectorType bands;
+        SpectralClassesVectorType spectralClasses;
+        const TrainingSitesContainer* trainingSitesContainer;
+
+      public:
+        ClassStatistics(const TrainingSitesContainer& trainingSitesContainer);
+        ~ClassStatistics();
+        double getClassAvg(const int spectralClass, const int band) const;
+        double getClassStdev(const int spectralClass, const int band) const;
+        long getPixelCount(const int spectralClass) const;
+        const TrainingSitesContainer* getTrainingSitesContainer() const;
+        const SpectralClassesVectorType& getSpectralClasses() const;
+        const BandsVectorType& getBands() const;
     };
 
     GDALDataset* openVectorDs(const char* fileName);
@@ -94,7 +114,7 @@ namespace oll
     bool pixelPolyGeomIntersection(OGRPolygon* polygonGeom, OGREnvelope* polygonEnvelope, double* xres, double* yres, int* width,
                                    int* pixel);
     void writeObjStat(const TrainingSitesContainer& trainingSitesContainer, const char* filename);
-    void writeClassStat(const TrainingSitesContainer& trainingSitesContainer, const char* filename);
+    void writeClassStat(const ClassStatistics& classStatistics, const char* filename);
 }
 
 #endif

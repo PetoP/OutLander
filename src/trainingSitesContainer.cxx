@@ -8,6 +8,10 @@ namespace oll
         {
             trainingSites.push_back(trSite);
             trainingSitesIds.push_back(trSite.getId());
+            if (std::find(spectralClasses.begin(), spectralClasses.end(), trSite.getSpectralClass()) == spectralClasses.end())
+            {
+                spectralClasses.push_back(trSite.getSpectralClass());
+            }
         }
         else
         {
@@ -67,5 +71,10 @@ namespace oll
     const oll::TrainingSitesContainer::TrainingSitesType& oll::TrainingSitesContainer::getTrainingSites() const
     {
         return trainingSites;
-    }
+    };
+
+    const oll::TrainingSitesContainer::TrainingSitesSpecClassType& oll::TrainingSitesContainer::getSpectralClasses() const
+    {
+        return spectralClasses;
+    };
 }
