@@ -17,6 +17,14 @@ namespace oll
         {
             std::cerr << "Training site id " << trSite.getId() << " allready stored!" << std::endl;
         }
+
+        for (int band : trSite.getBands())
+        {
+            if (std::find(bands.begin(), bands.end(), band) == bands.end())
+            {
+                bands.push_back(band);
+            }
+        }
     };
 
     void oll::TrainingSitesContainer::removeTrainingSite(const int id)
@@ -76,5 +84,43 @@ namespace oll
     const oll::TrainingSitesContainer::TrainingSitesSpecClassType& oll::TrainingSitesContainer::getSpectralClasses() const
     {
         return spectralClasses;
+    };
+
+    void oll::TrainingSitesContainer::writeStat(const char* filename) const
+    {
+        // output CSV preparation
+        std::ofstream outputCSV;
+        outputCSV.open(filename);
+        outputCSV << "id,count";
+
+        // print headers
+        for (const int& band : bands)
+        {
+            outputCSV << ",b" << band << "_avg"
+                      << ",b" << band << "_stdev";
+        }
+
+        double avg, stdev;
+
+        // iterate over training sites
+        const oll::TrainingSitesContainer::TrainingSitesType trainingSites = getTrainingSites();
+        for (const oll::TrainingSite& trainingSite : trainingSites)
+        {
+            outputCSV << std::endl << trainingSite.getId();
+            outputCSV << "," << trainingSite.getPixelCount();
+
+            for (const int& band : bands)
+            {
+                outputCSV << "," << trainingSite.getBandAvg(band) << "," << trainingSite.getBandStdev(band);
+            }
+        }
+
+        outputCSV << std::endl;
+        outputCSV.close();
+    };
+
+    const oll::BandsVectorType& oll::TrainingSitesContainer::getBands() const
+    {
+        return bands;
     };
 }

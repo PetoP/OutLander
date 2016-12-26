@@ -13,16 +13,19 @@ int main(int argc, char* argv[])
     namespace po = boost::program_options;
 
     // variables to hold CLI options
-    string inTrainingSites, inClassAttribute, inIdAttribute, inSatRaster, outObjStat, outClassStat, outTraingSites, outGroundTruth;
+    string inTrainingSitesDs, inTrainingSitesLyr, inClassAttribute, inIdAttribute, inSatRaster, outObjStat, outClassStat, outTraingSites,
+        outGroundTruth;
 
     // CLI options declaration
     po::options_description desc("Allowed options");
-    desc.add_options()("help,h", "produce help message")("its", po::value< string >(&inTrainingSites), "Input training sites vector.")(
-        "ica", po::value< string >(&inClassAttribute), "Input training sites class attribute.")("iia", po::value< string >(&inIdAttribute),
-                                                                                                "Input training sites id attribute.")(
-        "isr", po::value< string >(&inSatRaster),
-        "Input satellite data raster.")("oos", po::value< string >(&outObjStat),
-                                        "Output object statistics.")("ocs", po::value< string >(&outClassStat), "Output class statistics.");
+    desc.add_options()("help,h", "produce help message")("itd", po::value< string >(&inTrainingSitesDs),
+                                                         "Input training sites vector data source.")(
+        "itl", po::value< string >(&inTrainingSitesLyr),
+        "Input training sites vector layer name.")("ica", po::value< string >(&inClassAttribute), "Input training sites class attribute.")(
+        "iia", po::value< string >(&inIdAttribute), "Input training sites id attribute.")("isr", po::value< string >(&inSatRaster),
+                                                                                          "Input satellite data raster.")(
+        "oos", po::value< string >(&outObjStat), "Output object statistics.")("ocs", po::value< string >(&outClassStat),
+                                                                              "Output class statistics.");
     po::variables_map vm;
 
     // CLI options handling
@@ -46,25 +49,34 @@ int main(int argc, char* argv[])
 
     GDALAllRegister();
 
-    // training sites reading
-    GDALDataset* pVDs;
-    pVDs = oll::openVectorDs(inTrainingSites.c_str());
-
     // satellite image reading
     GDALDataset* pRDs;
     pRDs = oll::openRasterDs(inSatRaster.c_str());
 
-    // generate statistics
-    oll::TrainingSitesContainer trainingSitesContainer = oll::readData(pVDs, inClassAttribute.c_str(), inIdAttribute.c_str(), pRDs);
+    oll::TrainingSitesContainer trainingSitesContainer;
+    if (vm.count("itl"))
+    {
+        // training sites reading
+        OGRLayer* pLyr;
+        pLyr = oll::openVectorLyr(inTrainingSitesDs.c_str(), inTrainingSitesLyr.c_str());
+        // generate statistics
+        trainingSitesContainer = oll::readData(pLyr, inClassAttribute.c_str(), inIdAttribute.c_str(), pRDs);
+    }
+    else
+    {
+        GDALDataset* pVDs;
+        pVDs = oll::openVectorDs(inTrainingSitesDs.c_str());
+        trainingSitesContainer = oll::readData(pVDs, inClassAttribute.c_str(), inIdAttribute.c_str(), pRDs);
+    }
 
     // writing statistics
-    oll::writeObjStat(trainingSitesContainer, outObjStat.c_str());
+    trainingSitesContainer.writeStat(outObjStat.c_str());
 
     // compute class statistics
     oll::ClassStatistics classStatistics(trainingSitesContainer);
 
     // write class statistics
-    oll::writeClassStat(classStatistics, outClassStat.c_str());
+    classStatistics.writeStat(outClassStat.c_str());
 
     return 0;
 }

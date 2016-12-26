@@ -11,20 +11,19 @@ namespace oll
 
         for (const int& spectralClass : trainingSitesContainer.getSpectralClasses())
         {
+            spectralClasses.push_back(spectralClass);
             for (const int& band : trainingSitesContainer.getTrainingSites().begin()->getBands())
             {
-                bands.push_back(band);
+                if (std::find(bands.begin(), bands.end(), band) == bands.end())
+                {
+                    bands.push_back(band);
+                }
                 values.clear();
                 sum = numerator = 0;
                 for (const TrainingSite& trSite : trainingSitesContainer.getTrainingSites())
                 {
                     if (trSite.getSpectralClass() == spectralClass)
                     {
-                        if (std::find(spectralClasses.begin(), spectralClasses.end(), trSite.getSpectralClass()) == spectralClasses.end())
-                        {
-                            spectralClasses.push_back(trSite.getSpectralClass());
-                        }
-
                         for (const double& value : trSite.getBandValues(band))
                         {
                             values.push_back(value);
@@ -112,4 +111,31 @@ namespace oll
     {
         return bands;
     };
+
+    void oll::ClassStatistics::writeStat(const char* filename) const
+    {
+        // output CSV preparation
+        std::ofstream outputCSV;
+        outputCSV.open(filename);
+        outputCSV << "class,count";
+
+        for (const int& band : getBands())
+        {
+            outputCSV << ",b" << band << "_avg"
+                      << ",b" << band << "_stdev";
+        }
+
+        for (const int& specClass : getSpectralClasses())
+        {
+            outputCSV << std::endl << specClass << "," << getPixelCount(specClass);
+
+            for (const int& band : getBands())
+            {
+                outputCSV << "," << getClassAvg(specClass, band) << "," << getClassStdev(specClass, band);
+            }
+        }
+
+        outputCSV << std::endl;
+        outputCSV.close();
+    }
 }

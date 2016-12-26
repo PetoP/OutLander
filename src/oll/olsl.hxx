@@ -55,9 +55,10 @@ namespace oll
         typedef std::vector< int > TrainingSitesSpecClassType;
 
       private:
-        TrainingSitesType trainingSites;            // stores all training sites
-        TrainingSitesIdsType trainingSitesIds;      // stores all ids of training sites
-        TrainingSitesSpecClassType spectralClasses; // store all unique spectral classes ids
+        TrainingSitesType trainingSites;            // training sites
+        TrainingSitesIdsType trainingSitesIds;      // ids of training sites
+        TrainingSitesSpecClassType spectralClasses; // unique spectral classes ids
+        BandsVectorType bands;                      // bands
 
       public:
         void addTrainingSite(TrainingSite trSite); // add new training site to container
@@ -67,6 +68,8 @@ namespace oll
         const TrainingSitesIdsType& getTrainingSitesIds() const;
         const TrainingSitesType& getTrainingSites() const;
         const TrainingSitesSpecClassType& getSpectralClasses() const;
+        void writeStat(const char* filename) const;
+        const BandsVectorType& getBands() const;
     };
 
     // class for calculating and storing class statistics values
@@ -105,16 +108,17 @@ namespace oll
         const TrainingSitesContainer* getTrainingSitesContainer() const;
         const SpectralClassesVectorType& getSpectralClasses() const;
         const BandsVectorType& getBands() const;
+        void writeStat(const char* filename) const;
     };
 
     GDALDataset* openVectorDs(const char* fileName);
+    OGRLayer* openVectorLyr(const char* fileName, const char* lyrName);
     GDALDataset* openRasterDs(const char* fileName);
     TrainingSitesContainer readData(GDALDataset* trainingSites, const char* classAttribute, const char* idAttribute,
                                     GDALDataset* satelliteImage);
+    TrainingSitesContainer readData(OGRLayer* pLyr, const char* classAttribute, const char* idAttribute, GDALDataset* satelliteImage);
     bool pixelPolyGeomIntersection(OGRPolygon* polygonGeom, OGREnvelope* polygonEnvelope, double* xres, double* yres, int* width,
                                    int* pixel);
-    void writeObjStat(const TrainingSitesContainer& trainingSitesContainer, const char* filename);
-    void writeClassStat(const ClassStatistics& classStatistics, const char* filename);
 }
 
 #endif

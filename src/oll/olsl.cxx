@@ -17,6 +17,30 @@ namespace oll
         return pDs;
     };
 
+    OGRLayer* openVectorLyr(const char* fileName, const char* lyrName)
+    {
+        GDALDataset* pDs;
+        pDs = (GDALDataset*)GDALOpenEx(fileName, GDAL_OF_VECTOR, NULL, NULL, NULL);
+
+        if (pDs == NULL)
+        {
+            // TODO toto vyrieš vínimkou
+            std::cerr << "Can't open dataset " << fileName << "!" << std::endl;
+            exit(-1);
+        }
+
+        OGRLayer* pLyr = pDs->GetLayerByName(lyrName);
+
+        if (pLyr == NULL)
+        {
+            // TODO toto vyrieš vínimkou
+            std::cerr << "Can't open training sites layer \"" << lyrName << "\"!" << std::endl;
+            exit(-1);
+        }
+
+        return pLyr;
+    };
+
     GDALDataset* openRasterDs(const char* fileName)
     {
         GDALDataset* pDs;
@@ -35,8 +59,6 @@ namespace oll
     oll::TrainingSitesContainer readData(GDALDataset* trainingSites, const char* classAttribute, const char* idAttribute,
                                          GDALDataset* satelliteImage)
     {
-        oll::TrainingSitesContainer trainingSitesContainer;
-
         // layer reading and testing
         OGRLayer* pLyr;
         pLyr = trainingSites->GetLayer(0);
@@ -44,10 +66,17 @@ namespace oll
         if (pLyr == NULL)
         {
             // TODO toto vyrieš vínimkou
-            std::cerr << "Can't open training sites layer !" << std::endl;
+            std::cerr << "Can't open training sites layer!" << std::endl;
             exit(-1);
         }
 
+        return oll::readData(pLyr, classAttribute, idAttribute, satelliteImage);
+
+    };
+
+    oll::TrainingSitesContainer readData(OGRLayer* pLyr, const char* classAttribute, const char* idAttribute, GDALDataset* satelliteImage)
+    {
+        oll::TrainingSitesContainer trainingSitesContainer;
         // attributes testing
         OGRFeatureDefn* pFeatDef = pLyr->GetLayerDefn();
         int idFieldIndex, classFieldIndex;
@@ -179,68 +208,5 @@ namespace oll
         y = polygonEnvelope->MaxY - (row * -(*yres)) - *yres * 0.5;
 
         return polygonGeom->Intersects(new OGRPoint(x, y));
-    }
-
-    void writeObjStat(const TrainingSitesContainer& trainingSitesContainer, const char* filename)
-    {
-        // output CSV preparation
-        std::ofstream outputCSV;
-        outputCSV.open(filename);
-        outputCSV << "id,count";
-
-        // print headers
-        const int firstId = trainingSitesContainer.getTrainingSitesIds()[0];
-        const oll::TrainingSite& firstTrainingSite = trainingSitesContainer.getTrainingSite(firstId);
-        const oll::BandsVectorType bands = firstTrainingSite.getBands();
-        for (const int& band : bands)
-        {
-            outputCSV << ",b" << band << "_avg"
-                      << ",b" << band << "_stdev";
-        }
-
-        double avg, stdev;
-
-        // iterate over training sites
-        const oll::TrainingSitesContainer::TrainingSitesType trainingSites = trainingSitesContainer.getTrainingSites();
-        for (const oll::TrainingSite& trainingSite : trainingSites)
-        {
-            outputCSV << std::endl << trainingSite.getId();
-            outputCSV << "," << trainingSite.getPixelCount();
-
-            for (const int& band : bands)
-            {
-                outputCSV << "," << trainingSite.getBandAvg(band) << "," << trainingSite.getBandStdev(band);
-            }
-        }
-
-        outputCSV << std::endl;
-        outputCSV.close();
-    }
-
-    void writeClassStat(const ClassStatistics& classStatistics, const char* filename)
-    {
-        // output CSV preparation
-        std::ofstream outputCSV;
-        outputCSV.open(filename);
-        outputCSV << "class,count";
-
-        for (const int& band : classStatistics.getBands())
-        {
-            outputCSV << ",b" << band << "_avg"
-                      << ",b" << band << "_stdev";
-        }
-
-        for (const int& specClass : classStatistics.getSpectralClasses())
-        {
-            outputCSV << std::endl << specClass << "," << classStatistics.getPixelCount(specClass);
-
-            for (const int& band : classStatistics.getBands())
-            {
-                outputCSV << "," << classStatistics.getClassAvg(specClass, band) << "," << classStatistics.getClassStdev(specClass, band);
-            }
-        }
-
-        outputCSV << std::endl;
-        outputCSV.close();
     }
 }
