@@ -47,6 +47,7 @@
 #include <iostream>
 #include <limits>
 #include <string.h>
+#include <cmath>
 
 #include <cpl_conv.h>
 #include <cpl_string.h>
@@ -66,105 +67,108 @@
 
 namespace oll
 {
-// definície typov pixlov
-typedef double PixelType;
-typedef unsigned short LabelPixelType;
+    // definície typov pixlov
+    typedef double PixelType;
+    typedef unsigned short LabelPixelType;
 
-// definícia typov rastrov
-const unsigned int DIMENSION = 2;
-typedef otb::Image<LabelPixelType, DIMENSION> LabelImageType;
-typedef otb::Image<PixelType, DIMENSION> DEMCharImageType;
-typedef otb::VectorImage<PixelType, DIMENSION> ImageType;
-typedef otb::VectorImage<LabelPixelType, DIMENSION> VectorImageType;
+    // definícia typov rastrov
+    const unsigned int DIMENSION = 2;
+    typedef otb::Image< LabelPixelType, DIMENSION > LabelImageType;
+    typedef otb::Image< PixelType, DIMENSION > DoubleImageType;
+    typedef otb::VectorImage< PixelType, DIMENSION > VectorImageType;
+    typedef otb::VectorImage< LabelPixelType, DIMENSION > LabelVectorImageType;
 
-// definícia vektorových dát
-typedef otb::VectorData<PixelType, DIMENSION> VectorDataType;
+    // definícia vektorových dát
+    typedef otb::VectorData< PixelType, DIMENSION > VectorDataType;
 
-typedef unsigned long ConfusionMatrixEltType;
-typedef itk::VariableSizeMatrix<ConfusionMatrixEltType> ConfusionMatrixType;
-typedef otb::ConfusionMatrixToMassOfBelief<ConfusionMatrixType, LabelPixelType> ConfusionMatrixToMassOfBeliefType;
-typedef ConfusionMatrixToMassOfBeliefType::MapOfClassesType MapOfClassesType;
-typedef otb::ImageList<LabelImageType> LabelImageListType;
-typedef otb::ImageListToVectorImageFilter<LabelImageListType, VectorImageType> ImageListToVectorImageFilterType;
-typedef otb::DSFusionOfClassifiersImageFilter<VectorImageType, LabelImageType> DSFusionOfClassifiersImageFilterType;
-typedef otb::VectorDataToLabelImageFilter<VectorDataType, LabelImageType> VectorDataToLabelImageFilterType;
-typedef otb::VectorDataIntoImageProjectionFilter<VectorDataType, ImageType> VectorDataReprojectionType;
-typedef otb::ListSampleGenerator<VectorImageType, VectorDataType> ListSampleGeneratorType;
-typedef otb::ConfusionMatrixCalculator<ListSampleGeneratorType::ListLabelType, ListSampleGeneratorType::ListSampleType>
-    ConfusionMatrixCalculatorType;
-typedef otb::ConfusionMatrixMeasurements<ConfusionMatrixType, LabelPixelType> ConfusionMatrixMeasurementsType;
-typedef itk::ImageRegionIterator<LabelImageType> LabelImageRegionIteratorType;
+    typedef unsigned long ConfusionMatrixEltType;
+    typedef itk::VariableSizeMatrix< ConfusionMatrixEltType > ConfusionMatrixType;
+    typedef otb::ConfusionMatrixToMassOfBelief< ConfusionMatrixType, LabelPixelType > ConfusionMatrixToMassOfBeliefType;
+    typedef ConfusionMatrixToMassOfBeliefType::MapOfClassesType MapOfClassesType;
+    typedef otb::ImageList< LabelImageType > LabelImageListType;
+    typedef otb::ImageListToVectorImageFilter< LabelImageListType, LabelVectorImageType > ImageListToVectorImageFilterType;
+    typedef otb::DSFusionOfClassifiersImageFilter< LabelVectorImageType, LabelImageType > DSFusionOfClassifiersImageFilterType;
+    typedef otb::VectorDataToLabelImageFilter< VectorDataType, LabelImageType > VectorDataToLabelImageFilterType;
+    typedef otb::VectorDataIntoImageProjectionFilter< VectorDataType, VectorImageType > VectorDataReprojectionType;
+    typedef otb::ListSampleGenerator< LabelVectorImageType, VectorDataType > ListSampleGeneratorType;
+    typedef otb::ConfusionMatrixCalculator< ListSampleGeneratorType::ListLabelType, ListSampleGeneratorType::ListSampleType >
+        ConfusionMatrixCalculatorType;
+    typedef otb::ConfusionMatrixMeasurements< ConfusionMatrixType, LabelPixelType > ConfusionMatrixMeasurementsType;
+    typedef itk::ImageRegionIterator< LabelImageType > LabelImageRegionIteratorType;
+    typedef itk::ImageRegionIterator< DoubleImageType > DoubleImageRegionIteratorType;
+    typedef itk::ImageRegionConstIterator< VectorImageType > ImageRegionConstIteratorType;
 
-typedef itk::ImageRegionConstIterator<DEMCharImageType> DEMCharImageRegionConstIteratorType;
-typedef itk::GradientMagnitudeImageFilter<DEMCharImageType, DEMCharImageType> GradientMagnitudeImageFilterType;
-typedef itk::AtanImageFilter<DEMCharImageType, DEMCharImageType> AtanImageFilterType;
-typedef otb::MultiplyByScalarImageFilter<DEMCharImageType, DEMCharImageType> MultiplyByScalarImageFilterType;
-typedef otb::ImageMetadataInterfaceBase::VectorType GeoTransformType;
-// typedef otb::LabelImageToVectorDataFilter<LabelImageType, PixelType> LabelImageToVectorDataFilter;
-// typedef otb::VectorDataToLabelImageFilter<VectorDataType, LabelImageType> VectorDataToLabelImageFilterType;
-typedef otb::LabelImageToOGRDataSourceFilter<LabelImageType> LabelImageToOGRDataSourceFilterType;
-typedef otb::OGRDataSourceToLabelImageFilter<LabelImageType> OGRDataSourceToLabelImageFilter;
-typedef otb::ImageToVectorImageCastFilter<LabelImageType, VectorImageType> ImageToVectorImageCastFilterType;
+    typedef itk::ImageRegionConstIterator< DoubleImageType > DoubleImageRegionConstIteratorType;
+    typedef itk::GradientMagnitudeImageFilter< DoubleImageType, DoubleImageType > GradientMagnitudeImageFilterType;
+    typedef itk::AtanImageFilter< DoubleImageType, DoubleImageType > AtanImageFilterType;
+    typedef otb::MultiplyByScalarImageFilter< DoubleImageType, DoubleImageType > MultiplyByScalarImageFilterType;
+    typedef otb::ImageMetadataInterfaceBase::VectorType GeoTransformType;
+    typedef otb::LabelImageToOGRDataSourceFilter< LabelImageType > LabelImageToOGRDataSourceFilterType;
+    typedef otb::OGRDataSourceToLabelImageFilter< LabelImageType > OGRDataSourceToLabelImageFilter;
+    typedef otb::ImageToVectorImageCastFilter< LabelImageType, LabelVectorImageType > ImageToVectorImageCastFilterType;
 
-// na definovanie transformácie
-// typedef otb::GenericMapProjection<otb::TransformDirection::FORWARD> GenericMapProjectionForwardType;
+    // na transformáciu DEM DIR do rastra (OTB špecifický prístup)
+    typedef otb::DEMToImageGenerator< DoubleImageType > DEMToImageGenerator;
 
-// na transformáciu rastra
-// typedef otb::GenericRSResampleImageFilter<DEMCharImageType, DEMCharImageType> GenericRSResampleImageFilter;
+    // struct for recieving data from vypocitajChybovuMaticu
+    typedef struct
+    {
+        ConfusionMatrixCalculatorType::ConfusionMatrixType confMat;
+        ConfusionMatrixCalculatorType::MapOfClassesType mapOfClasses;
+    } confMatData;
 
-// na transformáciu DEM DIR do rastra (OTB špecifický prístup)
-typedef otb::DEMToImageGenerator<DEMCharImageType> DEMToImageGenerator;
+    // druh testovania existenice priečinku, alebo súboru
+    enum existanceCheckType
+    {
+        inputFilePath,
+        folderPath,
+        outputFilePath
+    };
 
-// struct for recieving data from vypocitajChybovuMaticu
-typedef struct
-{
-    ConfusionMatrixCalculatorType::ConfusionMatrixType confMat;
-    ConfusionMatrixCalculatorType::MapOfClassesType mapOfClasses;
-} confMatData;
+    // druhy klasifikoačných metód
+    enum trainingMethod
+    {
+        libSVM,
+        gradientBoostedTree,
+        desicionTree
+    };
 
-// druh testovania existenice priečinku, alebo súboru
-enum existanceCheckType
-{
-    inputFilePath,
-    folderPath,
-    outputFilePath
-};
+    // satellite types
+    enum satellites
+    {
+        Landsat8,
+        Sentinel2
+    };
 
-// druhy klasifikoačných metód
-enum trainingMethod
-{
-    libSVM,
-    gradientBoostedTree,
-    desicionTree
-};
+    // typedef for storing reslassification rules
+    typedef std::vector< std::pair< LabelPixelType, LabelPixelType > > ReclassificationRulesType;
 
-// typedef for storing reslassification rules
-typedef std::vector<std::pair<LabelPixelType, LabelPixelType> > ReclassificationRulesType;
-
-bool checkIfExists(const boost::filesystem::path path, const oll::existanceCheckType mode);
-void loadRaster(oll::ImageType::Pointer raster, std::string path);
-void loadRaster(oll::LabelImageType::Pointer raster, std::string path);
-void loadRaster(oll::DEMCharImageType::Pointer raster, std::string path);
-void loadVector(oll::VectorDataType::Pointer vector, std::string path);
-void train(oll::ImageType::Pointer image, oll::VectorDataType::Pointer trainingSites, std::string outputModel,
-           std::string classAttributeName, oll::trainingMethod trainingMethod);
-void classify(oll::ImageType::Pointer image, std::string inputModel, oll::LabelImageType::Pointer outputRaster);
-void ulozRaster(oll::LabelImageType::Pointer raster, std::string outputFile);
-void ulozRaster(oll::ImageType::Pointer raster, std::string outputFile);
-void ulozRaster(oll::DEMCharImageType::Pointer raster, std::string outputFile);
-confMatData vypocitajChybovuMaticu(oll::LabelImageType::Pointer classifiedRaster, oll::VectorDataType::Pointer groundTruthVector,
-                                   std::string classAttributeName);
-void dsf(oll::LabelImageListType::Pointer classifiedImages, std::vector<oll::ConfusionMatrixType> &matrices,
-         std::vector<oll::ConfusionMatrixCalculatorType::MapOfClassesType> &mapOfClasses, oll::LabelPixelType nodataLabel,
-         oll::LabelPixelType undecidedLabel, oll::LabelImageType::Pointer outputRaster);
-oll::ReclassificationRulesType readReclassificationRules(std::string pathToReclassificationRules);
-void reclassifyRaster(const oll::LabelImageType::Pointer inputRaster, oll::LabelImageType::Pointer outputRaster,
-                      const oll::ReclassificationRulesType &reclassificationRules);
-void computeSlopeRaster(const oll::DEMCharImageType::Pointer demRaster, oll::DEMCharImageType::Pointer slopeRaster);
-void podSklon(const oll::LabelImageType::Pointer podPlodRaster, const oll::DEMCharImageType::Pointer slopeRaster,
-              oll::LabelImageType::Pointer outputRaster, oll::PixelType hranicnySklon);
-void podRozloh(const oll::LabelImageType::Pointer podSklon, oll::LabelImageType::Pointer outputRaster, float hranicnaVelkost);
-void alignDEM(const oll::ImageType::Pointer sourceImage, oll::DEMCharImageType::Pointer alignedDem);
+    bool checkIfExists(const boost::filesystem::path path, const oll::existanceCheckType mode);
+    void loadRaster(oll::VectorImageType::Pointer raster, std::string path);
+    void loadRaster(oll::LabelImageType::Pointer raster, std::string path);
+    void loadRaster(oll::DoubleImageType::Pointer raster, std::string path);
+    void loadVector(oll::VectorDataType::Pointer vector, std::string path);
+    void train(oll::VectorImageType::Pointer image, oll::VectorDataType::Pointer trainingSites, std::string outputModel,
+               std::string classAttributeName, oll::trainingMethod trainingMethod);
+    void classify(oll::VectorImageType::Pointer image, std::string inputModel, oll::LabelImageType::Pointer outputRaster);
+    void ulozRaster(oll::LabelImageType::Pointer raster, std::string outputFile);
+    void ulozRaster(oll::VectorImageType::Pointer raster, std::string outputFile);
+    void ulozRaster(oll::DoubleImageType::Pointer raster, std::string outputFile);
+    confMatData vypocitajChybovuMaticu(oll::LabelImageType::Pointer classifiedRaster, oll::VectorDataType::Pointer groundTruthVector,
+                                       std::string classAttributeName);
+    void dsf(oll::LabelImageListType::Pointer classifiedImages, std::vector< oll::ConfusionMatrixType >& matrices,
+             std::vector< oll::ConfusionMatrixCalculatorType::MapOfClassesType >& mapOfClasses, oll::LabelPixelType nodataLabel,
+             oll::LabelPixelType undecidedLabel, oll::LabelImageType::Pointer outputRaster);
+    oll::ReclassificationRulesType readReclassificationRules(std::string pathToReclassificationRules);
+    void reclassifyRaster(const oll::LabelImageType::Pointer inputRaster, oll::LabelImageType::Pointer outputRaster,
+                          const oll::ReclassificationRulesType& reclassificationRules);
+    void computeSlopeRaster(const oll::DoubleImageType::Pointer demRaster, oll::DoubleImageType::Pointer slopeRaster);
+    void podSklon(const oll::LabelImageType::Pointer podPlodRaster, const oll::DoubleImageType::Pointer slopeRaster,
+                  oll::LabelImageType::Pointer outputRaster, oll::PixelType hranicnySklon);
+    void podRozloh(const oll::LabelImageType::Pointer podSklon, oll::LabelImageType::Pointer outputRaster, float hranicnaVelkost);
+    void alignDEM(const oll::VectorImageType::Pointer sourceImage, oll::DoubleImageType::Pointer alignedDem);
+    void albedo(const oll::VectorImageType::Pointer satelliteImage, const oll::satellites satelliteType,
+                oll::DoubleImageType::Pointer albedoRaster);
 }
 
 #endif

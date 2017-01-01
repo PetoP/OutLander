@@ -3,14 +3,22 @@ import matplotlib.pyplot as plt
 from matplotlib.path import Path
 import matplotlib.ticker as plticker
 import matplotlib.patches as patches
+import matplotlib.dates as mdates
 import numpy as np
 import sys
 import datetime
 
-ocs = ("/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/S2A_02_07_2016:20_ocs.csv")
-dates = ("2.7.2016")
-ocs2 = "/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/LC8_21_07_2016_ocs.csv"
-dates2 = "21.7.2016"
+ocs = ("/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/LC8_16_04_2016_ocs.csv",
+       "/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/LC8_19_06_2016_ocs.csv",
+       "/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/LC8_21_07_2016_ocs.csv",
+       "/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/S2A_02_07_2016:20_ocs.csv",
+       "/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/S2A_22_06_2016:20_ocs.csv",
+       "/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/S2A_23_05_2016:20_ocs.csv")
+
+dates = ("16.4.2016", "19.6.2016", "21.7.2016",
+         "2.7.2016", "22.6.2016", "23.5.2016")
+
+satellites = ("L8", "L8", "L8", "S2", "S2", "S2")
 
 mpl.rcParams["xtick.direction"] = "inout"
 mpl.rcParams["ytick.direction"] = "inout"
@@ -28,6 +36,7 @@ mpl.rcParams[
     "text.latex.preamble"] = "\\usepackage{{mathpazo}} \n \\usepackage{{siunitx}} \n \\usepackage{{numprint}} \n \\npthousandsep{{\,}} \n \\npdecimalsign{{.}} \n \\npthousandthpartsep{{}} \n \\DeclareMathSymbol{.}{\\mathord}{letters}{\"3B}"
 mpl.rcParams['text.usetex'] = True
 mpl.rcParams['text.latex.unicode'] = True
+
 
 class ClassStatistics:
 
@@ -83,7 +92,8 @@ class ClassStatistics:
                                   (0.694, 0.713),  # B05
                                   (0.731, 0.749),  # B06
                                   (0.769, 0.797),  # B07
-                                  (0.848, 0.881),  # B08b (B8A according to product xml)
+                                  # B08b (B8A according to product xml)
+                                  (0.848, 0.881),
                                   (1.539, 1.682),  # B11
                                   (2.078, 2.320))  # B12
             elif resolution == 60:
@@ -94,7 +104,8 @@ class ClassStatistics:
                                   (0.694, 0.713),  # B05
                                   (0.731, 0.749),  # B06
                                   (0.769, 0.797),  # B07
-                                  (0.848, 0.881),  # B08b (B8A according to product xml)
+                                  # B08b (B8A according to product xml)
+                                  (0.848, 0.881),
                                   (0.932, 0.958),  # B09
                                   # (1.337, 1.412),# B10 !!!
                                   (1.539, 1.682),  # B11
@@ -154,7 +165,8 @@ class ClassStatistics:
 
         plt.xlabel("Spectral class", size=14)
         plt.ylabel("Pixel count", size=14)
-        plt.xticks(range(len(self._classes)), [r"$\num{{{}}}$".format(i) for i in self._classes])
+        plt.xticks(range(len(self._classes)), [
+                   r"$\num{{{}}}$".format(i) for i in self._classes])
         plt.xlim(0 - 0.7 * width, len(self._classes) - 1 + 0.7 * width)
 
         ax.grid()
@@ -181,14 +193,28 @@ class ClassStatistics:
             assert spectClass in self._classes
             return self._avgs[np.where(self._classes == spectClass)[0][0]]
 
+    def getAverage(self, spectClass, band):
+        assert spectClass in self._classes
+        assert band in self._bands
+        return self._avgs[np.where(self._classes == spectClass)[0][0]][np.where(self._bands == band)][0]
+
+    def getStDevs(self, spectClass=None):
+        if spectClass is None:
+            return self._stdevs
+        else:
+            assert spectClass in self._classes
+            return self._stdevs[np.where(self._classes == spectClass)[0][0]]
+
+    def getStdev(self, spectClass, band):
+        assert spectClass in self._classes
+        assert band in self._bands
+        return self._stdevs[np.where(self._classes == spectClass)[0][0]][np.where(self._bands == band)][0]
+
     def getBands(self):
         return self._bands
 
     def getBandsUm(self):
         return self._bands_um
-
-    def getStDevs(self):
-        return self._stdevs
 
     def getSatellite(self):
         return self._satellite
@@ -211,9 +237,11 @@ def spectPlot(cs, cs2=None, specClass=None):
             ytlim = np.amax(cs.getAverages(specClass)) / 10000 * 1.1
     else:
         if specClass is None:
-            ytlim = np.amax(cs.getAverages()) / 10000 * 1.1 if np.amax(cs.getAverages()) > np.amax(cs2.getAverages()) else np.amax(cs2.getAverages()) / 10000 * 1.1
+            ytlim = np.amax(cs.getAverages()) / 10000 * 1.1 if np.amax(cs.getAverages()
+                                                                       ) > np.amax(cs2.getAverages()) else np.amax(cs2.getAverages()) / 10000 * 1.1
         else:
-            ytlim = np.amax(cs.getAverages(specClass)) / 10000 * 1.1 if np.amax(cs.getAverages(specClass)) > np.amax(cs2.getAverages(specClass)) else np.amax(cs2.getAverages(specClass)) / 10000 * 1.1
+            ytlim = np.amax(cs.getAverages(specClass)) / 10000 * 1.1 if np.amax(cs.getAverages(specClass)
+                                                                                ) > np.amax(cs2.getAverages(specClass)) else np.amax(cs2.getAverages(specClass)) / 10000 * 1.1
 
     ax.set_ylim(bottom=0, top=ytlim)
     # plotting each spectral class
@@ -228,12 +256,12 @@ def spectPlot(cs, cs2=None, specClass=None):
                     label=cs.getClasses()[spectClass])
             ax.errorbar(x,
                         cs.getAverages(cs.getClasses()[spectClass]) / 10000,
-                        yerr=cs.getStDevs()[spectClass] / 10000,
+                        yerr=cs.getStDevs(cs.getClasses()[spectClass]) / 10000,
                         color=lineColors[cs.getClasses()[spectClass - 1]],
                         lw=0.5,
                         zorder=5)
             if cs2 is not None:
-                x = [(x[0] + x[1]) / 2 for x in cs2._bands_um]
+                x = [(x[0] + x[1]) / 2 for x in cs2.getBandsUm()]
                 ax.plot(x,
                         cs2.getAverages(cs2.getClasses()[spectClass]) / 10000,
                         color=lineColors[cs2.getClasses()[spectClass]],
@@ -241,8 +269,9 @@ def spectPlot(cs, cs2=None, specClass=None):
                         ls=":",
                         zorder=5)
                 ax.errorbar(x,
-                            cs2.getAverages(cs2.getClasses([spectClass])) / 10000,
-                            yerr=cs2.getStDevs()[spectClass] / 10000,
+                            cs2.getAverages(cs2.getClasses(
+                                [spectClass])) / 10000,
+                            yerr=cs.getStDevs(cs2.getClasses()[spectClass]) / 10000,
                             color=lineColors[cs2.getClasses([spectClass])],
                             lw=0.5,
                             ls="",
@@ -307,28 +336,180 @@ def spectPlot(cs, cs2=None, specClass=None):
     plt.xlim(dmin - 2 * dperc, dmax + 2 * dperc)
     plt.show()
 
+
 class ClassStatisticsContainer:
+
     def __init__(self, classStatistics):
         assert isinstance(classStatistics, (list, tuple))
-        self._classStatistics = sorted(list(classStatistics), key=lambda x: x.getDate())
+        self._classStatistics = list(classStatistics)
+        self._sort()
+
+    def _sort(self):
+        self._classStatistics = sorted(self._classStatistics, key=lambda x: x.getDate())
 
     def addCS(self, classStatistics):
         assert isinstance(classStatistics, ClassStatistics)
         self._classStatistics.append(ClassStatistics)
-        self._classStatistics = sorted(list(classStatistics), key=lambda x: x.getDate())
+        self._sort()
 
     def getEntries(self):
         return self._classStatistics
+
+    def __getitem__(self, pos):
+        assert isinstance(pos, int)
+        return self._classStatistics[pos]
+
+    def timePlot(self, satellite, satelliteBand, spectClass=None, plotStdev=False):
+        """
+        Plots time plot of classStatistics inside container. Currently only S2 scenes with 20m res are supported.
+
+        satellite -- {"L8", "S2", "all"}
+        satelliteBand -- befines which spectral band is going to be plotted. If satellite is "L8", than number of band
+                         refers L8 bands, the same with S2. If satellite is "all", number belongs to L8 band numbers.
+        spectralClass -- plot only defined spectral class
+        """
+        assert satellite in ("L8", "S2", "all")
+        if satellite == "L8" or satellite == "all":
+            bands = range(1, 8)
+        elif satellite == "S2":
+            bands = (2, 3, 4, 5, 6, 7, 8, 11, 12)
+        assert satelliteBand in bands
+
+        spectralClasses = []
+        for scene in self._classStatistics:
+            [spectralClasses.append(i) for i in scene.getClasses() if i not in spectralClasses]
+
+        # figure creation
+        fig = plt.figure(figsize=(15, 10))
+        ax = fig.add_subplot(111)
+
+        l8band2s2 = {
+            1: 1,
+            2: 2,
+            3: 3,
+            4: 4,
+            5: 8,
+            6: 11,
+            7: 12
+        }
+
+        sceneDates = []
+        sceneSatellites = []
+        sceneBands = []
+        save = True
+        for spectralClass in spectralClasses:
+            avgs = []
+            if plotStdev:
+                stdevs = []
+            dates = []
+
+            try:
+                cont = spectralClass not in spectClass
+            except:
+                cont = spectralClass != spectClass
+
+            if spectClass is not None and cont:
+                continue
+
+            for scene in self._classStatistics:
+
+                sceneSatellite = scene.getSatellite()
+                if satellite == "L8" or satellite == "S2":
+                    if sceneSatellite != satellite:
+                        continue
+
+                if sceneSatellite == "L8" or (sceneSatellite == "S2" and satellite == "S2"):
+                    sceneBand = satelliteBand
+                else:
+                    sceneBand = l8band2s2[satelliteBand]
+
+                avgs.append(scene.getAverage(spectralClass, sceneBand) / 10000)
+                if plotStdev:
+                    stdevs.append(scene.getStdev(spectralClass, sceneBand) / 10000)
+
+                date = scene.getDate()
+                dates.append(date)
+                if save:
+                    sceneDates.append(date)
+                    sceneSatellites.append(sceneSatellite)
+                    sceneBands.append(sceneBand)
+
+            startDate = dates[0]
+            endDate = dates[-1]
+
+            ax.plot(dates,
+                    avgs,
+                    ".-",
+                    markersize=10,
+                    color = lineColors[spectralClasses.index(spectralClass)],
+                    zorder=5)
+            if plotStdev:
+                ax.errorbar(dates,
+                            avgs,
+                            yerr=avgs,
+                            color = lineColors[spectralClasses.index(spectralClass)],
+                            zorder=5)
+
+            save = False
+
+        # setting xlimits
+        startDate = startDate.replace(day=1)
+        if endDate.month < 12:
+            endDate = endDate.replace(month=endDate.month + 1, day=1)
+        else:
+            endDate = endDate.replace(year=endDate.year + 1, month=1, day=1)
+
+        ax.set_xlim(startDate, endDate)
+
+        # plotting bands
+        xmin, xmax = ax.get_xlim()
+        xperc = (xmax - xmin) / 100
+        ymin, ymax = ax.get_ylim()
+        yperc = (ymax - ymin) / 100
+        for i in range(len(sceneDates)):
+            bx = sceneDates[i].toordinal()
+            by = ymax if bx - sceneDates[i-1].toordinal() > 5 * xperc or i == 0 else ymax + yperc * 5
+            ax.text(sceneDates[i],
+                    by,
+                    "{} B{}\n{}".format(sceneSatellites[i], sceneBands[i], sceneDates[i].strftime("%-d.%-m.%Y")),
+                    ha="center",
+                    va="bottom")
+            ax.axvline(bx, zorder=1, ls="--", c="#E0E0E0")
+
+        # setting tickers
+        ymajstep = 0.05
+        xmloc = mdates.MonthLocator()
+        xiloc = mdates.DayLocator()
+        ymloc = plticker.MultipleLocator(base=ymajstep)
+        yiloc = plticker.MultipleLocator(base=ymajstep / 2)
+        ax.xaxis.set_major_locator(xmloc)
+        ax.xaxis.set_minor_locator(xiloc)
+        ax.yaxis.set_major_locator(ymloc)
+        ax.yaxis.set_minor_locator(yiloc)
+        ax.yaxis.set_ticks_position('left')
+        ax.xaxis.set_ticks_position('bottom')
+        yticksFormatter = mpl.ticker.ScalarFormatter(useLocale=True)
+        xticksFormatter = mdates.DateFormatter("%-d.%-m.%Y")
+        ax.yaxis.set_major_formatter(yticksFormatter)
+        ax.xaxis.set_major_formatter(xticksFormatter)
+
+        plt.xlabel("Date", size=14)
+        plt.ylabel("Reflectance", size=14)
+
+        plt.show()
 
 
 # if __name__ == "__main__":
 if True:
     try:
-        CS = ClassStatistics(ocs, dates, "S2", 20)
-        CS2 = ClassStatistics(ocs2, dates2, "L8")
-        csc = ClassStatisticsContainer((CS2, CS))
-        # CS.spectPlot()
-        # CS.pixelCountPlot()
+        stats = []
+        for i in range(len(ocs)):
+            if satellites[i] == "L8":
+                stats.append(ClassStatistics(ocs[i], dates[i], "L8"))
+            elif satellites[i] == "S2":
+                stats.append(ClassStatistics(ocs[i], dates[i], "S2", 20))
+        csc = ClassStatisticsContainer(stats)
+        csc.timePlot("all", 5)
 
     except KeyboardInterrupt:
         exit(2)
