@@ -14,12 +14,20 @@ int main(int argc, char* argv[])
 
     // variables to hold CLI options
     string sourceImage, trainingSamples, groundTruth, classAtribure, demDir, reclasRulesFile, outRecl, outPodPlod, outPodSklon, outAll, outAlbedo;
+    bool svm = false;
+    bool gbt = false;
+    bool dt = false;
+    int numClassifiers = 0;
     bool classify = false;
+    bool reclassify = false;
 
     // CLI options declaration
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help,h", "produce help message")
+        ("svm,s", "Use SVM classifier.")
+        ("gbt,g", "Use GBT classifier.")
+        ("dt,d", "Use DT classifier.")
         ("isr", po::value< string >(&sourceImage), "Input multiband satellite raster data.")
         ("its", po::value< string >(&trainingSamples), "Input training samples vector.")
         ("igt", po::value< string >(&groundTruth), "Input ground truth vector.")
@@ -32,7 +40,7 @@ int main(int argc, char* argv[])
         ("out", po::value< string >(&outAll), "Output raster with all condition applied.")
         ("oa", po::value< string >(&outAlbedo), "Output albedo raster.");
 
-    std::string usage = " [-h] --isr --its --igt --ica --demdir [--irr] [--olr] [--occ] [--ocs] [--oa]";
+    std::string usage = " [-hsgd] --isr --its --igt --ica --demdir [--irr] [--olr] [--occ] [--ocs] [--oa]";
 
     // CLI options handling
     po::variables_map vm;
@@ -52,9 +60,36 @@ int main(int argc, char* argv[])
         parametersOk = false;
     }
 
-    if (!vm.count(("oa")) || (vm.count("its")) || vm.count("igt") || vm.count("ica") || vm.count("demdir") || vm.count("olr"))
+    if (!vm.count(("oa")) || (vm.count("its")) || vm.count("igt") || vm.count("ica") || vm.count("demdir") || vm.count("olr") ||
+        vm.count("occ") || vm.count("ocs") || vm.count("oa"))
     {
         classify = true;
+        if (!vm.count("svm") && !vm.count("gbt") && !vm.count("dt"))
+        {
+            svm = gbt = dt = true;
+            numClassifiers = 3;
+        }
+        else {
+            if (vm.count("svm"))
+            {
+                svm = true;
+                numClassifiers++;
+            }
+
+            if (vm.count("gbt"))
+            {
+                gbt = true;
+                numClassifiers++;
+            }
+
+            if (vm.count("dt"))
+            {
+                dt = true;
+                numClassifiers++;
+            }
+        }
+
+
         if (!vm.count("its"))
         {
             std::cout << "Option its is missing!" << endl;
@@ -83,6 +118,11 @@ int main(int argc, char* argv[])
         {
             std::cout << "No output specified!" << endl;
             parametersOk = false;
+        }
+
+        if (vm.count("occ") && vm.count("ocs") && vm.count("out"))
+        {
+            reclassify = true;
         }
     }
 
@@ -132,94 +172,113 @@ int main(int argc, char* argv[])
         oll::VectorDataType::Pointer groundTruthVector = oll::VectorDataType::New();
         oll::loadVector(groundTruthVector, groundTruth);
 
-        if (!oll::checkIfExists(reclasRulesFile, oll::inputFilePath))
+        oll::ReclassificationRulesType reclassificationRules;
+        if (reclassify)
         {
-            cerr << "Can't read input reclassification rules file!" << endl;
-            return -1;
+            if (!oll::checkIfExists(reclasRulesFile, oll::inputFilePath))
+            {
+                cerr << "Can't read input reclassification rules file!" << endl;
+                return -1;
+            }
+
+            // reading and validation of input reclassification rules
+            reclassificationRules = oll::readReclassificationRules(reclasRulesFile);
         }
 
-        // reading and validation of input reclassification rules
-        oll::ReclassificationRulesType reclassificationRules = oll::readReclassificationRules(reclasRulesFile);
-
-        // image training
+        // image training and classification
         string modelDT = "/tmp/modelDT.txt";
         string modelGBT = "/tmp/modelGBT.txt";
         string modelLibSVM = "/tmp/modelLibSVM.txt";
-        oll::train(inputImage, trainingSites, modelDT, classAtribure, oll::desicionTree);
-        oll::train(inputImage, trainingSites, modelGBT, classAtribure, oll::gradientBoostedTree);
-        oll::train(inputImage, trainingSites, modelLibSVM, classAtribure, oll::libSVM);
-
-        // image classification
         oll::LabelImageType::Pointer DTClassified = oll::LabelImageType::New();
         oll::LabelImageType::Pointer GBTClassified = oll::LabelImageType::New();
         oll::LabelImageType::Pointer LibSVMClassified = oll::LabelImageType::New();
-        oll::classify(inputImage, modelDT, DTClassified);
-        oll::classify(inputImage, modelGBT, GBTClassified);
-        oll::classify(inputImage, modelLibSVM, LibSVMClassified);
+        oll::confMatData DTcm, GBTcm, LibSVMcm;
+        std::vector< oll::ConfusionMatrixType > matrices;
+        std::vector< oll::ConfusionMatrixCalculatorType::MapOfClassesType > maps;
+        oll::LabelImageListType::Pointer classifiedImages = oll::LabelImageListType::New();
+        oll::LabelImageType::Pointer fusedImage;
+        if (dt)
+        {
+            oll::train(inputImage, trainingSites, modelDT, classAtribure, oll::desicionTree);
+            oll::classify(inputImage, modelDT, DTClassified);
+            DTcm = oll::vypocitajChybovuMaticu(DTClassified, groundTruthVector, classAtribure);
+            matrices.push_back(DTcm.confMat);
+            maps.push_back(DTcm.mapOfClasses);
+            classifiedImages->PushBack(DTClassified);
+            fusedImage = DTClassified;
+        }
+        if (gbt)
+        {
+            oll::train(inputImage, trainingSites, modelGBT, classAtribure, oll::gradientBoostedTree);
+            oll::classify(inputImage, modelGBT, GBTClassified);
+            GBTcm = oll::vypocitajChybovuMaticu(GBTClassified, groundTruthVector, classAtribure);
+            matrices.push_back(GBTcm.confMat);
+            maps.push_back(GBTcm.mapOfClasses);
+            classifiedImages->PushBack(GBTClassified);
+            fusedImage = GBTClassified;
+        }
+        if (svm)
+        {
+            oll::train(inputImage, trainingSites, modelLibSVM, classAtribure, oll::libSVM);
+            oll::classify(inputImage, modelLibSVM, LibSVMClassified);
+            LibSVMcm = oll::vypocitajChybovuMaticu(LibSVMClassified, groundTruthVector, classAtribure);
+            matrices.push_back(LibSVMcm.confMat);
+            maps.push_back(LibSVMcm.mapOfClasses);
+            classifiedImages->PushBack(LibSVMClassified);
+            fusedImage = LibSVMClassified;
+        }
 
         // oll::ulozRaster(DTClassified, "/home/peter/classified_DT.tif");
         // oll::ulozRaster(GBTClassified, "/home/peter/classified_GBT.tif");
         // oll::ulozRaster(LibSVMClassified, "/home/peter/classified_SVM.tif");
 
-        // confusion matrices computation
-        oll::confMatData DTcm = oll::vypocitajChybovuMaticu(DTClassified, groundTruthVector, classAtribure);
-        oll::confMatData GBTcm = oll::vypocitajChybovuMaticu(GBTClassified, groundTruthVector, classAtribure);
-        oll::confMatData LibSVMcm = oll::vypocitajChybovuMaticu(LibSVMClassified, groundTruthVector, classAtribure);
-
-        std::vector< oll::ConfusionMatrixType > matrices;
-        std::vector< oll::ConfusionMatrixCalculatorType::MapOfClassesType > maps;
-        oll::LabelImageListType::Pointer classifiedImages = oll::LabelImageListType::New();
-        matrices.push_back(DTcm.confMat);
-        maps.push_back(DTcm.mapOfClasses);
-        classifiedImages->PushBack(DTClassified);
-        matrices.push_back(GBTcm.confMat);
-        maps.push_back(GBTcm.mapOfClasses);
-        classifiedImages->PushBack(GBTClassified);
-        matrices.push_back(LibSVMcm.confMat);
-        maps.push_back(LibSVMcm.mapOfClasses);
-        classifiedImages->PushBack(LibSVMClassified);
-
-        // fusion of classified images
-        oll::LabelImageType::Pointer fusedImage = oll::LabelImageType::New();
-        oll::dsf(classifiedImages, matrices, maps, 0, 255, fusedImage);
+        if (numClassifiers >= 1)
+        {
+            // fusion of classified images
+            oll::LabelImageType::Pointer fusedImage = oll::LabelImageType::New();
+            oll::dsf(classifiedImages, matrices, maps, 0, 255, fusedImage);
+        }
 
         if (vm.count("olr"))
         {
             oll::ulozRaster(fusedImage, outRecl);
         }
 
-        // condition od crop applicaiton
-        oll::LabelImageType::Pointer podPlod = oll::LabelImageType::New();
-        oll::reclassifyRaster(fusedImage, podPlod, reclassificationRules);
-
-        if (vm.count("occ"))
+        if (reclassify)
         {
-            oll::ulozRaster(podPlod, outPodPlod);
-        }
+            // condition of crop applicaiton
+            oll::LabelImageType::Pointer podPlod = oll::LabelImageType::New();
+            oll::reclassifyRaster(fusedImage, podPlod, reclassificationRules);
 
-        // condition of slope application
-        if (vm.count("ocs") || vm.count("out"))
-        {
-            oll::DoubleImageType::Pointer alignedDem = oll::DoubleImageType::New();
-            oll::alignDEM(inputImage, alignedDem);
-
-            oll::DoubleImageType::Pointer slope = oll::DoubleImageType::New();
-            oll::computeSlopeRaster(alignedDem, slope);
-
-            oll::LabelImageType::Pointer podSklon = oll::LabelImageType::New();
-            oll::podSklon(podPlod, slope, podSklon, 5);
-
-            if (vm.count("ocs"))
+            if (vm.count("occ"))
             {
-                oll::ulozRaster(podSklon, outPodSklon);
+                oll::ulozRaster(podPlod, outPodPlod);
             }
 
-            // condition of area application
-            if (vm.count("out"))
+            // condition of slope application
+            if (vm.count("ocs") || vm.count("out"))
             {
-                oll::LabelImageType::Pointer podRozloh = oll::LabelImageType::New();
-                oll::podRozloh(podSklon, podRozloh, 150);
-                oll::ulozRaster(podRozloh, outAll);
+                oll::DoubleImageType::Pointer alignedDem = oll::DoubleImageType::New();
+                oll::alignDEM(inputImage, alignedDem);
+
+                oll::DoubleImageType::Pointer slope = oll::DoubleImageType::New();
+                oll::computeSlopeRaster(alignedDem, slope);
+
+                oll::LabelImageType::Pointer podSklon = oll::LabelImageType::New();
+                oll::podSklon(podPlod, slope, podSklon, 5);
+
+                if (vm.count("ocs"))
+                {
+                    oll::ulozRaster(podSklon, outPodSklon);
+                }
+
+                // condition of area application
+                if (vm.count("out"))
+                {
+                    oll::LabelImageType::Pointer podRozloh = oll::LabelImageType::New();
+                    oll::podRozloh(podSklon, podRozloh, 150);
+                    oll::ulozRaster(podRozloh, outAll);
+                }
             }
         }
     }
