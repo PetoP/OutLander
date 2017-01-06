@@ -91,7 +91,7 @@ namespace oll
         // output CSV preparation
         std::ofstream outputCSV;
         outputCSV.open(filename);
-        outputCSV << "id,count";
+        outputCSV << "id,class,count";
 
         // print headers
         for (const int& band : bands)
@@ -100,14 +100,13 @@ namespace oll
                       << ",b" << band << "_stdev";
         }
 
-        double avg, stdev;
-
         // iterate over training sites
         const oll::TrainingSitesContainer::TrainingSitesType trainingSites = getTrainingSites();
         for (const oll::TrainingSite& trainingSite : trainingSites)
         {
-            outputCSV << std::endl << trainingSite.getId();
-            outputCSV << "," << trainingSite.getPixelCount();
+            outputCSV << std::endl << trainingSite.getId()
+                      << "," << trainingSite.getSpectralClass()
+                      << "," << trainingSite.getPixelCount();
 
             for (const int& band : bands)
             {
@@ -117,6 +116,15 @@ namespace oll
 
         outputCSV << std::endl;
         outputCSV.close();
+
+        // outputCSVT
+        std::ofstream outputCSVT;
+        std::string filenameCSVT;
+        filenameCSVT = filename;
+        filenameCSVT += "t";
+        outputCSVT.open(filenameCSVT.c_str());
+        outputCSVT << "\"Integer\",\"Integer\",\"Integer\",\"Real\",\"Real\",\"Real\",\"Real\",\"Real\",\"Real\",\"Real\",\"Real\",\"Real\",\"Real\",\"Real\",\"Real\",\"Real\",\"Real\"" << std::endl;
+
     };
 
     const oll::BandsVectorType& oll::TrainingSitesContainer::getBands() const

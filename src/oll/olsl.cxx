@@ -71,7 +71,6 @@ namespace oll
         }
 
         return oll::readData(pLyr, classAttribute, idAttribute, satelliteImage);
-
     };
 
     oll::TrainingSitesContainer readData(OGRLayer* pLyr, const char* classAttribute, const char* idAttribute, GDALDataset* satelliteImage)
@@ -82,12 +81,13 @@ namespace oll
         int idFieldIndex, classFieldIndex;
         idFieldIndex = pFeatDef->GetFieldIndex(idAttribute);
         classFieldIndex = pFeatDef->GetFieldIndex(classAttribute);
+        bool useFID = false;
 
         if (idFieldIndex < 0)
         {
             // TODO toto vyrieš vínikou
-            std::cerr << "Training sites vector does not have attribute \"" << idAttribute << "\"!" << std::endl;
-            exit(-1);
+            std::cerr << "Id field not found, using geometry FID!" << std::endl;
+            useFID = true;
         }
 
         if (classFieldIndex < 0)
@@ -97,11 +97,14 @@ namespace oll
             exit(-1);
         }
 
-        if (pFeatDef->GetFieldDefn(idFieldIndex)->GetType() != OFTInteger)
+        if (!useFID)
         {
-            // TODO toto vyrieš vínimkou
-            std::cerr << "Id field of training sites should be of type integer!" << std::endl;
-            exit(-1);
+            if (pFeatDef->GetFieldDefn(idFieldIndex)->GetType() != OFTInteger)
+            {
+                // TODO toto vyrieš vínimkou
+                std::cerr << "Id field of training sites should be of type integer!" << std::endl;
+                exit(-1);
+            }
         }
 
         if (pFeatDef->GetFieldDefn(classFieldIndex)->GetType() != OFTInteger)
@@ -136,6 +139,7 @@ namespace oll
         int xofset, yofset, width, height;
         double* pRastData;
         oll::PixelValuesType values;
+        int id;
 
         // feature iteration
         pLyr->ResetReading();
@@ -145,6 +149,14 @@ namespace oll
             pFeatGeom = (OGRPolygon*)pFeat->GetGeometryRef();
             pFeatGeom->transformTo(&projection);
             pFeatGeom->getEnvelope(pFeatEnv);
+            if (useFID)
+            {
+                id = pFeat->GetFID();
+            }
+            else
+            {
+                id = pFeat->GetFieldAsInteger(idFieldIndex);
+            }
 
             // info about clipped raster
             xofset = (pFeatEnv->MinX - *ulx) / *xres;
@@ -163,7 +175,7 @@ namespace oll
 
             if (!featureOutsiteRaster)
             {
-                oll::TrainingSite trainingSite(pFeat->GetFieldAsInteger(idFieldIndex), pFeat->GetFieldAsInteger(classFieldIndex));
+                oll::TrainingSite trainingSite(id, pFeat->GetFieldAsInteger(classFieldIndex));
 
                 // croped raster dimensions
                 width = ((pFeatEnv->MaxX - pFeatEnv->MinX) / *xres) + 1;

@@ -8,17 +8,17 @@ import numpy as np
 import sys
 import datetime
 
-ocs = ("/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/LC8_16_04_2016_ocs.csv",
-       "/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/LC8_19_06_2016_ocs.csv",
-       "/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/LC8_21_07_2016_ocs.csv",
-       "/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/S2A_02_07_2016:20_ocs.csv",
-       "/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/S2A_22_06_2016:20_ocs.csv",
-       "/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/S2A_23_05_2016:20_ocs.csv")
+ocs = ("/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/LC8_16_04_16_ocs.csv",
+       "/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/S2A_23_05_16_ocs.csv",
+       "/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/LC8_19_06_16_ocs.csv")
 
-dates = ("16.4.2016", "19.6.2016", "21.7.2016",
-         "2.7.2016", "22.6.2016", "23.5.2016")
+oos = ("/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/LC8_16_04_16_oos.csv",
+       "/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/S2A_23_05_16_oos.csv",
+       "/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/LC8_19_06_16_oos.csv")
 
-satellites = ("L8", "L8", "L8", "S2", "S2", "S2")
+dates = ("16.4.2016", "23.5.2016", "19.6.2016")
+
+satellites = ("L8", "S2", "L8")
 
 mpl.rcParams["xtick.direction"] = "inout"
 mpl.rcParams["ytick.direction"] = "inout"
@@ -30,24 +30,45 @@ mpl.rcParams["figure.facecolor"] = "white"
 mpl.rcParams["grid.linestyle"] = "-"
 mpl.rcParams["grid.color"] = "#A0A0A0"
 mpl.rcParams["grid.linewidth"] = 0.5
-lineColors = ["g", "b", "r", "#800000", "#C3C3C3", "#000000", "#49CC51", "#33913A",
-              "#E4EB13", "#ACB10E", "#87A61C", "#FFFF00", "#D59739", "#9CCFCE", "#9C9A31"]
+# lineColors = ["g", "b", "r", "#800000", "#C3C3C3", "#000000", "#49CC51", "#33913A",
+#               "#E4EB13", "#ACB10E", "#87A61C", "#FFFF00", "#D59739", "#9CCFCE", "#9C9A31"]
+lineColors = ("#006000",  # les
+              "#008cfe",  # voda
+              "#b70000",  # umelé plochy
+              "#83d183",  # nízke porasty, trávy
+              "#c9b590",  # holá zem
+              "#ebeaf4",  # oblačnosť
+              "#000000",  # tiene
+              "#7eae54",  # obilniny zelené
+              "#e4eb13",  # obilniny svetlé
+              "#acb10e",  # kukurica
+              "#b7b700",  # slnečnica
+              "#d59739",  # repa
+              "#517c2c",  # repka oziminná zelená
+              "#adb00d")  # repka oziminná svetlá
 mpl.rcParams[
     "text.latex.preamble"] = "\\usepackage{{mathpazo}} \n \\usepackage{{siunitx}} \n \\usepackage{{numprint}} \n \\npthousandsep{{\,}} \n \\npdecimalsign{{.}} \n \\npthousandthpartsep{{}} \n \\DeclareMathSymbol{.}{\\mathord}{letters}{\"3B}"
 mpl.rcParams['text.usetex'] = True
 mpl.rcParams['text.latex.unicode'] = True
 
 
-class ClassStatistics:
+class TrSitesStatistics:
 
-    def __init__(self, filename, date, satellite, resolution=None):
+    def __init__(self, ocsfilename, oosfilename, date, satellite, resolution=None):
         assert isinstance(date, (str, datetime.date))
 
-        # CSV reading
+        # ocs CSV reading
         try:
-            data = np.genfromtxt(filename, skip_header=1, delimiter=",")
+            ocsdata = np.genfromtxt(ocsfilename, skip_header=1, delimiter=",")
         except:
-            sys.stderr.write("Unable to open file {}!\n".format(filename))
+            sys.stderr.write("Unable to open file {}!\n".format(ocsfilename))
+            exit(1)
+
+        # oos CSV reading
+        try:
+            oosdata = np.genfromtxt(oosfilename, skip_header=1, delimiter=",")
+        except:
+            sys.stderr.write("Unable to open file {}!\n".format(oosfilename))
             exit(1)
 
         # date parsing
@@ -116,17 +137,18 @@ class ClassStatistics:
 
         # number of columns from left, which are not statistical variables per
         # band
-        leftCols = 2
+        ocsLeftCols = 2
+        oosLeftCols = 3
 
-        self._classes = np.empty((len(data)), dtype=int)
-        self._counts = np.empty((len(data)), dtype=int)
-        for i in range(len(data)):
-            self._classes[i] = int(data[i][0])
-            self._counts[i] = int(data[i][1])
+        self._classes = np.empty((len(ocsdata)), dtype=int)
+        self._counts = np.empty((len(ocsdata)), dtype=int)
+        for i in range(len(ocsdata)):
+            self._classes[i] = int(ocsdata[i][0])
+            self._counts[i] = int(ocsdata[i][1])
 
         if self._satellite == "L8":
             self._bands = np.arange(
-                1, (data.shape[1] - leftCols) / variables + 1, dtype=int)
+                1, (ocsdata.shape[1] - ocsLeftCols) / variables + 1, dtype=int)
         elif self._satellite == "S2":
             if self._resolution == 10:
                 self._bands = np.array([2, 3, 4, 8], dtype=int)
@@ -140,11 +162,25 @@ class ClassStatistics:
 
         for i in range(len(self._classes)):
             for j in range(len(self._bands)):
-                self._avgs[i][j] = data[i][leftCols + j * variables]
-                self._stdevs[i][j] = data[i][leftCols + j * variables + 1]
+                self._avgs[i][j] = ocsdata[i][ocsLeftCols + j * variables]
+                self._stdevs[i][j] = ocsdata[i][ocsLeftCols + j * variables + 1]
 
-    def spectPlot(self, specClass=None):
-        spectPlot(self, specClass=specClass)
+        self._oos = {}
+        for specClass in self._classes:
+            self._oos[specClass] = {}
+            for band in range(len(self._bands)):
+                self._oos[specClass][band] = []
+                for trSite in oosdata:
+                    if trSite[1] == specClass:
+                        self._oos[specClass][band].append(trSite[oosLeftCols + band * variables])
+
+        for key in self._oos.keys():
+            for key2 in self._oos[key].keys():
+                self._oos[key][key2] = np.array(self._oos[key][key2], dtype=float)
+
+
+    def spectPlot(self, specClass=None, stdev=False):
+        spectPlot(self, specClass=specClass, stdev=stdev)
 
     def pixelCountPlot(self):
         fig = plt.figure(figsize=(15, 10))
@@ -219,63 +255,137 @@ class ClassStatistics:
     def getSatellite(self):
         return self._satellite
 
+    def getTrSitesAverages(self, spectClass, band):
+        assert spectClass in self._classes
+        assert band in self._bands
+        return self._oos[spectClass][np.where(self._bands == band)[0][0]]
 
-def spectPlot(cs, cs2=None, specClass=None):
+    def scatterPlot(self, bandX, bandY, spectClasses=None):
+        assert bandX in self._bands
+        assert bandY in self._bands
+
+        if spectClasses is not None:
+            assert isinstance(spectClasses, (int, tuple, list))
+            if isinstance(spectClasses, int):
+                assert spectClasses in self._classes
+            else:
+                for i in spectClasses:
+                    assert i in self._classes
+
+        # figure creation
+        fig = plt.figure(figsize=(15, 10))
+        ax = fig.add_subplot(111)
+
+        if spectClasses is None:
+            classes = self._classes
+        else:
+            classes = spectClasses
+
+        # setting limits
+        ax.set_xlim(0, 0.8)
+        ax.set_ylim(0, 0.8)
+
+        # setting tickers
+        majStep = 0.1
+
+        mloc = plticker.MultipleLocator(base=majStep)
+        iloc = plticker.MultipleLocator(base=majStep / 2)
+        ax.xaxis.set_major_locator(mloc)
+        ax.xaxis.set_minor_locator(iloc)
+        ax.yaxis.set_major_locator(mloc)
+        ax.yaxis.set_minor_locator(iloc)
+
+        # plotting
+        for spcl in classes:
+            ax.scatter(self.getTrSitesAverages(spcl, bandX) / 10000,
+                       self.getTrSitesAverages(spcl, bandY) / 10000,
+                       s=5,
+                       color=lineColors[spcl - 1],
+                       label=spcl)
+
+        # labels
+        plt.xlabel("Reflectnace B{}".format(bandX), size=14)
+        plt.ylabel("Reflectnace B{}".format(bandY), size=14)
+
+        # legend
+        plt.legend(fontsize=10, ncol=2, loc=0, scatterpoints=1)
+
+        plt.show()
+
+
+def spectPlot(cs, cs2=None, specClass=None, stdev=False):
     # figure creation
     fig = plt.figure(figsize=(15, 10))
     ax = fig.add_subplot(111)
 
-    assert isinstance(cs, ClassStatistics)
+    assert isinstance(cs, TrSitesStatistics)
 
     if cs2 is not None:
-        assert isinstance(cs2, ClassStatistics)
+        assert isinstance(cs2, TrSitesStatistics)
 
     if cs2 is None:
-        if specClass is None:
-            ytlim = np.amax(cs.getAverages()) / 10000 * 1.1
-        else:
-            ytlim = np.amax(cs.getAverages(specClass)) / 10000 * 1.1
+        ytlim = np.amax(cs.getAverages()) / 10000 * 1.1
     else:
-        if specClass is None:
-            ytlim = np.amax(cs.getAverages()) / 10000 * 1.1 if np.amax(cs.getAverages()
+        ytlim = np.amax(cs.getAverages()) / 10000 * 1.1 if np.amax(cs.getAverages()
                                                                        ) > np.amax(cs2.getAverages()) else np.amax(cs2.getAverages()) / 10000 * 1.1
-        else:
-            ytlim = np.amax(cs.getAverages(specClass)) / 10000 * 1.1 if np.amax(cs.getAverages(specClass)
-                                                                                ) > np.amax(cs2.getAverages(specClass)) else np.amax(cs2.getAverages(specClass)) / 10000 * 1.1
+
+    if specClass is not None:
+        assert isinstance(specClass, (int, tuple, list))
+        if isinstance(specClass, int):
+            assert specClass in cs.getClasses()
+            if cs2 is not None:
+                assert specClass in cs2.getClasses()
+        if isinstance(specClass, (tuple, list)):
+            for i in specClass:
+                assert i in cs.getClasses()
+                if cs2 is not None:
+                    assert specClass in cs2.getClasses()
 
     ax.set_ylim(bottom=0, top=ytlim)
     # plotting each spectral class
-    for spectClass in range(len(cs.getClasses())):
-        if specClass is None or specClass == cs.getClasses()[spectClass]:
+    for spectClass in cs.getClasses():
+
+        kresli = True
+        if specClass is not None:
+            kresli = False
+            try:
+                if spectClass == specClass:
+                    kresli = True
+            except:
+                if spectClass in specClass:
+                    kresli = True
+
+        if kresli:
             x = [(x[0] + x[1]) / 2 for x in cs.getBandsUm()]
             ax.plot(x,
-                    cs.getAverages(cs.getClasses()[spectClass]) / 10000,
-                    color=lineColors[cs.getClasses()[spectClass - 1]],
+                    cs.getAverages(spectClass) / 10000,
+                    color=lineColors[spectClass - 1],
                     lw=1.5,
                     zorder=5,
-                    label=cs.getClasses()[spectClass])
-            ax.errorbar(x,
-                        cs.getAverages(cs.getClasses()[spectClass]) / 10000,
-                        yerr=cs.getStDevs(cs.getClasses()[spectClass]) / 10000,
-                        color=lineColors[cs.getClasses()[spectClass - 1]],
-                        lw=0.5,
-                        zorder=5)
-            if cs2 is not None:
-                x = [(x[0] + x[1]) / 2 for x in cs2.getBandsUm()]
-                ax.plot(x,
-                        cs2.getAverages(cs2.getClasses()[spectClass]) / 10000,
-                        color=lineColors[cs2.getClasses()[spectClass]],
-                        lw=1.5,
-                        ls=":",
-                        zorder=5)
+                    label=spectClass)
+            if stdev:
                 ax.errorbar(x,
-                            cs2.getAverages(cs2.getClasses(
-                                [spectClass])) / 10000,
-                            yerr=cs.getStDevs(cs2.getClasses()[spectClass]) / 10000,
-                            color=lineColors[cs2.getClasses([spectClass])],
+                            cs.getAverages(spectClass) / 10000,
+                            yerr=cs.getStDevs(spectClass) / 10000,
+                            color=lineColors[spectClass - 1],
                             lw=0.5,
-                            ls="",
                             zorder=5)
+                if cs2 is not None:
+                    x = [(x[0] + x[1]) / 2 for x in cs2.getBandsUm()]
+                    ax.plot(x,
+                            cs2.getAverages(spectClass) / 10000,
+                            color=lineColors[spectClass - 1],
+                            lw=1.5,
+                            ls=":",
+                            zorder=5)
+                    if stdev:
+                        ax.errorbar(x,
+                                    cs2.getAverages(spectClass) / 10000,
+                                    yerr=cs.getStDevs(spectClass) / 10000,
+                                    color=lineColors[spectClass - 1],
+                                    lw=0.5,
+                                    ls="",
+                                    zorder=5)
 
     ymin, ymax = ax.get_ylim()
 
@@ -337,7 +447,7 @@ def spectPlot(cs, cs2=None, specClass=None):
     plt.show()
 
 
-class ClassStatisticsContainer:
+class TrSitesStatisticsContainer:
 
     def __init__(self, classStatistics):
         assert isinstance(classStatistics, (list, tuple))
@@ -345,11 +455,12 @@ class ClassStatisticsContainer:
         self._sort()
 
     def _sort(self):
-        self._classStatistics = sorted(self._classStatistics, key=lambda x: x.getDate())
+        self._classStatistics = sorted(
+            self._classStatistics, key=lambda x: x.getDate())
 
     def addCS(self, classStatistics):
-        assert isinstance(classStatistics, ClassStatistics)
-        self._classStatistics.append(ClassStatistics)
+        assert isinstance(classStatistics, TrSitesStatistics)
+        self._classStatistics.append(TrSitesStatistics)
         self._sort()
 
     def getEntries(self):
@@ -377,7 +488,8 @@ class ClassStatisticsContainer:
 
         spectralClasses = []
         for scene in self._classStatistics:
-            [spectralClasses.append(i) for i in scene.getClasses() if i not in spectralClasses]
+            [spectralClasses.append(
+                i) for i in scene.getClasses() if i not in spectralClasses]
 
         # figure creation
         fig = plt.figure(figsize=(15, 10))
@@ -425,7 +537,8 @@ class ClassStatisticsContainer:
 
                 avgs.append(scene.getAverage(spectralClass, sceneBand) / 10000)
                 if plotStdev:
-                    stdevs.append(scene.getStdev(spectralClass, sceneBand) / 10000)
+                    stdevs.append(scene.getStdev(
+                        spectralClass, sceneBand) / 10000)
 
                 date = scene.getDate()
                 dates.append(date)
@@ -441,13 +554,14 @@ class ClassStatisticsContainer:
                     avgs,
                     ".-",
                     markersize=10,
-                    color = lineColors[spectralClasses.index(spectralClass)],
+                    color=lineColors[spectralClasses.index(spectralClass)],
                     zorder=5)
             if plotStdev:
                 ax.errorbar(dates,
                             avgs,
                             yerr=avgs,
-                            color = lineColors[spectralClasses.index(spectralClass)],
+                            color=lineColors[
+                                spectralClasses.index(spectralClass)],
                             zorder=5)
 
             save = False
@@ -468,10 +582,12 @@ class ClassStatisticsContainer:
         yperc = (ymax - ymin) / 100
         for i in range(len(sceneDates)):
             bx = sceneDates[i].toordinal()
-            by = ymax if bx - sceneDates[i-1].toordinal() > 5 * xperc or i == 0 else ymax + yperc * 5
+            by = ymax if bx - \
+                sceneDates[i - 1].toordinal() > 5 * xperc or i == 0 else ymax + yperc * 5
             ax.text(sceneDates[i],
                     by,
-                    "{} B{}\n{}".format(sceneSatellites[i], sceneBands[i], sceneDates[i].strftime("%-d.%-m.%Y")),
+                    "{} B{}\n{}".format(sceneSatellites[i], sceneBands[
+                                        i], sceneDates[i].strftime("%-d.%-m.%Y")),
                     ha="center",
                     va="bottom")
             ax.axvline(bx, zorder=1, ls="--", c="#E0E0E0")
@@ -505,11 +621,13 @@ if True:
         stats = []
         for i in range(len(ocs)):
             if satellites[i] == "L8":
-                stats.append(ClassStatistics(ocs[i], dates[i], "L8"))
+                stats.append(TrSitesStatistics(ocs[i], oos[i], dates[i], "L8"))
             elif satellites[i] == "S2":
-                stats.append(ClassStatistics(ocs[i], dates[i], "S2", 20))
-        csc = ClassStatisticsContainer(stats)
-        csc.timePlot("all", 5)
+                stats.append(TrSitesStatistics(
+                    ocs[i], oos[i], dates[i], "S2", 20))
+        csc = TrSitesStatisticsContainer(stats)
+        # csc.timePlot("all", 5)
+        csc[2].scatterPlot(5, 6)
 
     except KeyboardInterrupt:
         exit(2)

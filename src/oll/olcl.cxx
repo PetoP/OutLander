@@ -284,6 +284,7 @@ namespace oll
 
         typedef otb::ImageFileWriter< LabelImageType > WriterType;
         WriterType::Pointer writer = WriterType::New();
+        writer->SetGlobalWarningDisplay(false);
         writer->SetFileName(outputFile);
         writer->SetInput(raster);
         writer->Update();
@@ -295,6 +296,7 @@ namespace oll
 
         typedef otb::ImageFileWriter< DoubleImageType > WriterType;
         WriterType::Pointer writer = WriterType::New();
+        writer->SetGlobalWarningDisplay(false);
         writer->SetFileName(outputFile);
         writer->SetInput(raster);
         writer->Update();
@@ -306,6 +308,7 @@ namespace oll
 
         typedef otb::ImageFileWriter< VectorImageType > WriterType;
         WriterType::Pointer writer = WriterType::New();
+        writer->SetGlobalWarningDisplay(false);
         writer->SetFileName(outputFile);
         writer->SetInput(raster);
         writer->Update();
