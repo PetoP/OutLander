@@ -93,7 +93,7 @@ namespace oll
     typedef otb::ListSampleGenerator< LabelVectorImageType, VectorDataType > ListSampleGeneratorType;
     typedef otb::ConfusionMatrixCalculator< ListSampleGeneratorType::ListLabelType, ListSampleGeneratorType::ListSampleType >
         ConfusionMatrixCalculatorType;
-    typedef otb::ConfusionMatrixMeasurements< ConfusionMatrixType, LabelPixelType > ConfusionMatrixMeasurementsType;
+    typedef otb::ConfusionMatrixMeasurements< ConfusionMatrixType, int > ConfusionMatrixMeasurementsType;
     typedef itk::ImageRegionIterator< LabelImageType > LabelImageRegionIteratorType;
     typedef itk::ImageRegionIterator< DoubleImageType > DoubleImageRegionIteratorType;
     typedef itk::ImageRegionConstIterator< VectorImageType > ImageRegionConstIteratorType;
@@ -169,6 +169,8 @@ namespace oll
     void alignDEM(const oll::VectorImageType::Pointer sourceImage, oll::DoubleImageType::Pointer alignedDem);
     void albedo(const oll::VectorImageType::Pointer satelliteImage, const oll::satellites satelliteType,
                 oll::DoubleImageType::Pointer albedoRaster);
+    void printConfMat(confMatData& cmd, std::ostream& outStream, bool perClass = true);
+    double kappa(double a, double b, double c, double d);
 }
 
 #endif

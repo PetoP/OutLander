@@ -188,11 +188,11 @@ int main(int argc, char* argv[])
         // image training and classification
         string modelDT = "/tmp/modelDT.txt";
         string modelGBT = "/tmp/modelGBT.txt";
-        string modelLibSVM = "/tmp/modelLibSVM.txt";
+        string modelSVM = "/tmp/modelSVM.txt";
         oll::LabelImageType::Pointer DTClassified = oll::LabelImageType::New();
         oll::LabelImageType::Pointer GBTClassified = oll::LabelImageType::New();
-        oll::LabelImageType::Pointer LibSVMClassified = oll::LabelImageType::New();
-        oll::confMatData DTcm, GBTcm, LibSVMcm;
+        oll::LabelImageType::Pointer SVMClassified = oll::LabelImageType::New();
+        oll::confMatData DTcm, GBTcm, SVMcm;
         std::vector< oll::ConfusionMatrixType > matrices;
         std::vector< oll::ConfusionMatrixCalculatorType::MapOfClassesType > maps;
         oll::LabelImageListType::Pointer classifiedImages = oll::LabelImageListType::New();
@@ -219,25 +219,27 @@ int main(int argc, char* argv[])
         }
         if (svm)
         {
-            oll::train(inputImage, trainingSites, modelLibSVM, classAtribure, oll::libSVM);
-            oll::classify(inputImage, modelLibSVM, LibSVMClassified);
-            LibSVMcm = oll::vypocitajChybovuMaticu(LibSVMClassified, groundTruthVector, classAtribure);
-            matrices.push_back(LibSVMcm.confMat);
-            maps.push_back(LibSVMcm.mapOfClasses);
-            classifiedImages->PushBack(LibSVMClassified);
-            fusedImage = LibSVMClassified;
+            oll::train(inputImage, trainingSites, modelSVM, classAtribure, oll::libSVM);
+            oll::classify(inputImage, modelSVM, SVMClassified);
+            SVMcm = oll::vypocitajChybovuMaticu(SVMClassified, groundTruthVector, classAtribure);
+            matrices.push_back(SVMcm.confMat);
+            maps.push_back(SVMcm.mapOfClasses);
+            classifiedImages->PushBack(SVMClassified);
+            fusedImage = SVMClassified;
+
+            oll::printConfMat(SVMcm, cout);
         }
 
         // oll::ulozRaster(DTClassified, "/home/peter/classified_DT.tif");
         // oll::ulozRaster(GBTClassified, "/home/peter/classified_GBT.tif");
-        // oll::ulozRaster(LibSVMClassified, "/home/peter/classified_SVM.tif");
+        // oll::ulozRaster(SVMClassified, "/home/peter/classified_SVM.tif");
 
         if (numClassifiers >= 1)
         {
             // fusion of classified images
             oll::LabelImageType::Pointer fusedImage = oll::LabelImageType::New();
             oll::dsf(classifiedImages, matrices, maps, 0, 255, fusedImage);
-        }
+        };
 
         if (vm.count("olr"))
         {

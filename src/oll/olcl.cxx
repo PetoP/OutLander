@@ -591,4 +591,45 @@ namespace oll
             aii.Set((0.356 * sii.Get()[blue] + 0.130 * sii.Get()[red] + 0.085 * sii.Get()[nir] + 0.072 * sii.Get()[swir] - 0.0018) / 101.6);
         }
     }
-};
+
+    void printConfMat(confMatData& cmd, std::ostream& outStream, bool perClass)
+    {
+        oll::ConfusionMatrixMeasurementsType::Pointer cmm = oll::ConfusionMatrixMeasurementsType::New();
+        cmm->SetMapOfClasses(cmd.mapOfClasses);
+        cmm->SetConfusionMatrix(cmd.confMat);
+        cmm->Compute();
+
+        if (perClass)
+        {
+            outStream << "class,kappa" << std::endl;
+            double a, b, c, d;
+            for (auto& cl : cmm->GetMapOfClasses())
+            {
+                a = cmm->GetTruePositiveValues()[cl.second];
+                b = cmm->GetFalseNegativeValues()[cl.second];
+                c = cmm->GetFalsePositiveValues()[cl.second];
+                d = cmm->GetTrueNegativeValues()[cl.second];
+
+                outStream <<  + cl.first << "," << oll::kappa(a, b, c, d) << std::endl;
+            }
+            outStream << ",";
+        }
+
+        outStream << cmm->GetKappaIndex() << std::endl;
+    }
+
+    double kappa(double a, double b, double c, double d)
+    {
+        double dev, po, ma, mb, pe;
+
+        dev = a + b + c + d;
+
+        po = (a + d) / dev;
+
+        ma = ((a + b) * (a + c)) / dev;
+        mb = ((c + d) * (b + d)) / dev;
+        pe = (ma + mb) / dev;
+
+        return (po - pe) / (1 - pe);
+    }
+}
