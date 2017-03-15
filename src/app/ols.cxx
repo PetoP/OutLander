@@ -18,14 +18,16 @@ int main(int argc, char* argv[])
 
     // CLI options declaration
     po::options_description desc("Allowed options");
-    desc.add_options()("help,h", "produce help message")("itd", po::value< string >(&inTrainingSitesDs),
-                                                         "Input training sites vector data source.")(
-        "itl", po::value< string >(&inTrainingSitesLyr),
-        "Input training sites vector layer name.")("ica", po::value< string >(&inClassAttribute), "Input training sites class attribute.")(
-        "iia", po::value< string >(&inIdAttribute), "Input training sites id attribute.")("isr", po::value< string >(&inSatRaster),
-                                                                                          "Input satellite data raster.")(
-        "oos", po::value< string >(&outObjStat), "Output object statistics.")("ocs", po::value< string >(&outClassStat),
-                                                                              "Output class statistics.");
+    desc.add_options()
+        ("help,h", "produce help message")
+        ("itd", po::value< string >(&inTrainingSitesDs), "Input training sites vector data source.")
+        ("itl", po::value< string >(&inTrainingSitesLyr), "Input training sites vector layer name.")
+        ("ica", po::value< string >(&inClassAttribute), "Input training sites class attribute.")
+        ("iia", po::value< string >(&inIdAttribute), "Input training sites id attribute.")
+        ("isr", po::value< string >(&inSatRaster), "Input satellite data raster.")
+        ("oos", po::value< string >(&outObjStat), "Output object statistics.")
+        ("ocs", po::value< string >(&outClassStat), "Output class statistics.");
+
     po::variables_map vm;
 
     // CLI options handling

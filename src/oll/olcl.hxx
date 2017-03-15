@@ -43,11 +43,11 @@
 #include "otbVectorDataToLabelImageFilter.h"
 #include "otbVectorImage.h"
 
+#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <limits>
 #include <string.h>
-#include <cmath>
 
 #include <cpl_conv.h>
 #include <cpl_string.h>
@@ -149,7 +149,7 @@ namespace oll
     void loadRaster(oll::DoubleImageType::Pointer raster, std::string path);
     void loadVector(oll::VectorDataType::Pointer vector, std::string path);
     void train(oll::VectorImageType::Pointer image, oll::VectorDataType::Pointer trainingSites, std::string outputModel,
-               std::string classAttributeName, oll::trainingMethod trainingMethod);
+               std::string classAttributeName, oll::trainingMethod trainingMethod, bool linear = false, bool optimize = false);
     void classify(oll::VectorImageType::Pointer image, std::string inputModel, oll::LabelImageType::Pointer outputRaster);
     void ulozRaster(oll::LabelImageType::Pointer raster, std::string outputFile);
     void ulozRaster(oll::VectorImageType::Pointer raster, std::string outputFile);

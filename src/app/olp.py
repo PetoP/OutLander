@@ -9,16 +9,16 @@ import sys
 import datetime
 
 ocs = ("/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/LC8_16_04_16_ocs.csv",
-       "/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/S2A_23_05_16_ocs.csv",
-       "/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/LC8_19_06_16_ocs.csv")
+       "/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/LC8_19_06_16_ocs.csv",
+       "/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/S2A_02_07_16_ocs.csv")
 
 oos = ("/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/LC8_16_04_16_oos.csv",
-       "/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/S2A_23_05_16_oos.csv",
-       "/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/LC8_19_06_16_oos.csv")
+       "/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/LC8_19_06_16_oos.csv",
+       "/run/media/peter/WD/ZIK/diplomovka/snimky/snimkova_statistika/S2A_02_07_16_oos.csv")
 
-dates = ("16.4.2016", "23.5.2016", "19.6.2016")
+dates = ("16.4.2016", "19.6.2016", "2.7.2016")
 
-satellites = ("L8", "S2", "L8")
+satellites = ("L8", "L8", "S2")
 
 mpl.rcParams["xtick.direction"] = "inout"
 mpl.rcParams["ytick.direction"] = "inout"
@@ -428,8 +428,6 @@ def spectPlot(cs, cs2=None, specClass=None, stdev=False):
     ax.xaxis.set_minor_locator(xiloc)
     ax.yaxis.set_major_locator(ymloc)
     ax.yaxis.set_minor_locator(yiloc)
-    ax.yaxis.set_ticks_position('left')
-    ax.xaxis.set_ticks_position('bottom')
     ticksFormatter = mpl.ticker.ScalarFormatter(useLocale=True)
     ticksFormatter2 = mpl.ticker.FuncFormatter(cs.tickFormat)
     ax.yaxis.set_major_formatter(ticksFormatter)
@@ -627,7 +625,8 @@ if True:
                     ocs[i], oos[i], dates[i], "S2", 20))
         csc = TrSitesStatisticsContainer(stats)
         # csc.timePlot("all", 5)
-        csc[2].scatterPlot(5, 6)
+        # csc[0].scatterPlot(5, 6)
+        # csc[1].spectPlot()
 
     except KeyboardInterrupt:
         exit(2)

@@ -1,4 +1,4 @@
-#include "olcl.hxx"
+ #include "olcl.hxx"
 
 namespace oll
 {
@@ -106,7 +106,7 @@ namespace oll
     }
 
     void train(oll::VectorImageType::Pointer image, oll::VectorDataType::Pointer trainingSites, std::string outputModel,
-               std::string classAttributeName, oll::trainingMethod trainingMethod)
+               std::string classAttributeName, oll::trainingMethod trainingMethod, bool linear, bool optimize)
     {
         // vector data reprojection to source image projection
         typedef otb::VectorDataIntoImageProjectionFilter< VectorDataType, VectorImageType > VectorDataReprojectionType;
@@ -133,15 +133,32 @@ namespace oll
         {
         case oll::libSVM:
         {
-            // TODO: redirect svm output
-            typedef otb::LibSVMMachineLearningModel< VectorImageType::InternalPixelType, ListSampleGeneratorType::ClassLabelType > SVMType;
-            SVMType::Pointer SVMClassifier = SVMType::New();
-            SVMClassifier->SetKernelType(CvSVM::LINEAR);
-            SVMClassifier->SetInputListSample(sampleGenerator->GetTrainingListSample());
-            SVMClassifier->SetTargetListSample(sampleGenerator->GetTrainingListLabel());
-
-            SVMClassifier->Train();
-            SVMClassifier->Save(outputModel);
+            if (!linear)
+            {
+                typedef otb::SVMMachineLearningModel< VectorImageType::InternalPixelType, ListSampleGeneratorType::ClassLabelType > SVMType;
+                SVMType::Pointer SVMClassifier = SVMType::New();
+                SVMClassifier->SetKernelType(CvSVM::RBF);
+                SVMClassifier->SetSVMType(CvSVM::NU_SVC);
+                SVMClassifier->SetNu(0.5);
+                SVMClassifier->SetGamma(1.0e-07);
+                SVMClassifier->SetC(10000000000);
+                SVMClassifier->SetParameterOptimization(optimize);
+                SVMClassifier->SetInputListSample(sampleGenerator->GetTrainingListSample());
+                SVMClassifier->SetTargetListSample(sampleGenerator->GetTrainingListLabel());
+                SVMClassifier->Train();
+                SVMClassifier->Save(outputModel);
+            }
+            else
+            {
+                // TODO: redirect svm output
+                typedef otb::LibSVMMachineLearningModel< VectorImageType::InternalPixelType, ListSampleGeneratorType::ClassLabelType > SVMType;
+                SVMType::Pointer SVMClassifier = SVMType::New();
+                SVMClassifier->SetKernelType(LINEAR);
+                SVMClassifier->SetInputListSample(sampleGenerator->GetTrainingListSample());
+                SVMClassifier->SetTargetListSample(sampleGenerator->GetTrainingListLabel());
+                SVMClassifier->Train();
+                SVMClassifier->Save(outputModel);
+            }
 
             break;
         }
@@ -551,12 +568,13 @@ namespace oll
         albedoRaster->Allocate();
 
         // setting bands indexies
-        int blue, red, nir, swir;
+        int blue, red, nir1, nir2, swir;
         if (satelliteType == oll::Landsat8)
         {
             blue = 2 - 1;
             red = 4 - 1;
-            nir = 5 - 1;
+            nir1 = 5 - 1;
+            nir2 = 6 - 1;
             swir = 7 - 1;
         }
         else if (satelliteType == oll::Sentinel2)
@@ -566,19 +584,22 @@ namespace oll
             {
                 blue = 1 - 1;
                 red = 3 - 1;
-                nir = 7 - 1;
+                nir1 = 7 - 1;
+                nir1 = 8 - 1;
                 swir = 9 - 1;
             }
             else if (xSpacing == 60)
             {
                 blue = 2 - 1;
                 red = 4 - 1;
-                nir = 8 - 1;
+                nir1 = 8 - 1;
+                nir2 = 8 - 1;
+                nir2 = 10 - 1;
                 swir = 11 - 1;
             }
             else
             {
-                std::cerr << "Albedo can be calculated from 20 and 60m resolution Sentinel2 images only!" << std::endl;
+                std::cerr << "Albedo can be calculated from 20 and 60 m resolution Sentinel2 images only!" << std::endl;
                 exit(1);
             }
         }
@@ -588,7 +609,7 @@ namespace oll
 
         for (sii.GoToBegin(), aii.GoToBegin(); !sii.IsAtEnd(); ++sii, ++aii)
         {
-            aii.Set((0.356 * sii.Get()[blue] + 0.130 * sii.Get()[red] + 0.085 * sii.Get()[nir] + 0.072 * sii.Get()[swir] - 0.0018) / 101.6);
+            aii.Set((0.356 * sii.Get()[blue] + 0.130 * sii.Get()[red] + 0.0373 * sii.Get()[nir1] + 0.085 * sii.Get()[nir2] + 0.072 * sii.Get()[swir] - 0.0018) / 101.6);
         }
     }
 
@@ -605,12 +626,13 @@ namespace oll
             double a, b, c, d;
             for (auto& cl : cmm->GetMapOfClasses())
             {
+                a = b = c = d = 0;
                 a = cmm->GetTruePositiveValues()[cl.second];
                 b = cmm->GetFalseNegativeValues()[cl.second];
                 c = cmm->GetFalsePositiveValues()[cl.second];
                 d = cmm->GetTrueNegativeValues()[cl.second];
 
-                outStream <<  + cl.first << "," << oll::kappa(a, b, c, d) << std::endl;
+                outStream << +cl.first << "," << oll::kappa(a, b, c, d) << std::endl;
             }
             outStream << ",";
         }

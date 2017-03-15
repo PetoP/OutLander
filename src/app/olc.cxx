@@ -1,6 +1,8 @@
 #include "../oll/olcl.hxx"
 #include <boost/program_options.hpp>
+#include <ctime>
 #include <iostream>
+#include <string>
 
 using std::string;
 using std::cout;
@@ -13,21 +15,28 @@ int main(int argc, char* argv[])
     namespace po = boost::program_options;
 
     // variables to hold CLI options
-    string sourceImage, trainingSamples, groundTruth, classAtribure, demDir, reclasRulesFile, outRecl, outPodPlod, outPodSklon, outAll, outAlbedo;
+    string sourceImage, trainingSamples, groundTruth, classAtribure, demDir, reclasRulesFile, outRecl, outPodPlod, outPodSklon, outAll,
+        outAlbedo;
     bool svm = false;
+    bool svmlin = false;
     bool gbt = false;
     bool dt = false;
     int numClassifiers = 0;
     bool classify = false;
     bool reclassify = false;
+    bool optimize = false;
 
     // CLI options declaration
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help,h", "produce help message")
         ("svm,s", "Use SVM classifier.")
+        ("linsvm,l", "Use linear SVM classifier.")
+        ("opt,o", "Optimize classifier parmetters.")
         ("gbt,g", "Use GBT classifier.")
         ("dt,d", "Use DT classifier.")
+        ("l8", "Satellite is L8")
+        ("s2", "Satellite is S2")
         ("isr", po::value< string >(&sourceImage), "Input multiband satellite raster data.")
         ("its", po::value< string >(&trainingSamples), "Input training samples vector.")
         ("igt", po::value< string >(&groundTruth), "Input ground truth vector.")
@@ -40,7 +49,7 @@ int main(int argc, char* argv[])
         ("out", po::value< string >(&outAll), "Output raster with all condition applied.")
         ("oa", po::value< string >(&outAlbedo), "Output albedo raster.");
 
-    std::string usage = " [-hsgd] --isr --its --igt --ica --demdir [--irr] [--olr] [--occ] [--ocs] [--oa]";
+    string usage = " [-hslgd] [--l8] [--s2] --isr --its --igt --ica --demdir [--irr] [--olr] [--occ] [--ocs] [--oa]";
 
     // CLI options handling
     po::variables_map vm;
@@ -56,12 +65,12 @@ int main(int argc, char* argv[])
 
     if (!vm.count("isr"))
     {
-        std::cout << "Option isr is missing!" << endl;
+        cout << "Option isr is missing!" << endl;
         parametersOk = false;
     }
 
     if (!vm.count(("oa")) || (vm.count("its")) || vm.count("igt") || vm.count("ica") || vm.count("demdir") || vm.count("olr") ||
-        vm.count("occ") || vm.count("ocs") || vm.count("oa"))
+        vm.count("occ") || vm.count("ocs") || vm.count("oa") || vm.count("out"))
     {
         classify = true;
         if (!vm.count("svm") && !vm.count("gbt") && !vm.count("dt"))
@@ -69,7 +78,15 @@ int main(int argc, char* argv[])
             svm = gbt = dt = true;
             numClassifiers = 3;
         }
-        else {
+        else
+        {
+            if (vm.count("linsvm"))
+            {
+                svmlin = true;
+                svm = true;
+                numClassifiers++;
+            }
+
             if (vm.count("svm"))
             {
                 svm = true;
@@ -89,49 +106,64 @@ int main(int argc, char* argv[])
             }
         }
 
+        if (vm.count("opt"))
+        {
+            optimize = true;
+        }
 
         if (!vm.count("its"))
         {
-            std::cout << "Option its is missing!" << endl;
+            cout << "Option its is missing!" << endl;
             parametersOk = false;
         }
 
         if (!vm.count("igt"))
         {
-            std::cout << "Option igt is missing!" << endl;
+            cout << "Option igt is missing!" << endl;
             parametersOk = false;
         }
 
         if (!vm.count("ica"))
         {
-            std::cout << "Option ica is missing!" << endl;
+            cout << "Option ica is missing!" << endl;
             parametersOk = false;
         }
 
         if (!vm.count("demdir"))
         {
-            std::cout << "Option demdir is missing!" << endl;
+            cout << "Option demdir is missing!" << endl;
             parametersOk = false;
         }
 
         if (!vm.count("olr") && !vm.count("occ") && !vm.count("ocs") && !vm.count("out"))
         {
-            std::cout << "No output specified!" << endl;
+            cout << "No output specified!" << endl;
             parametersOk = false;
         }
 
-        if (vm.count("occ") && vm.count("ocs") && vm.count("out"))
+        if (vm.count("occ") || vm.count("ocs") || vm.count("out"))
         {
             reclassify = true;
+        }
+
+        if (vm.count("oa")) {
+            if ((!vm.count("l8") && !vm.count("s2")) || (vm.count("l8") && vm.count("s2")))
+            {
+                cout << "You need to specify satellite for albedo calculation!" << endl;
+                parametersOk = false;
+            }
         }
     }
 
     if (!parametersOk)
     {
-        std::cout << endl << "Use option -h [--help] for help." << endl << "Usage: " << argv[0] << usage << endl;
+        cout << endl << "Use option -h [--help] for help." << endl << "Usage: " << argv[0] << usage << endl;
         return -1;
     }
 
+    time_t timer1;
+    time(&timer1);
+    string sufix = std::to_string(timer1);
     GDALAllRegister();
 
     // input image reading
@@ -149,7 +181,7 @@ int main(int argc, char* argv[])
         otb::DEMHandler::Pointer demHandler = otb::DEMHandler::Instance();
         if (!demHandler->IsValidDEMDirectory(demDir.c_str()))
         {
-            std::cerr << "Input dem directory is not usable!\n";
+            cerr << "Input dem directory is not usable!\n";
             return -1;
         }
         demHandler->OpenDEMDirectory(demDir);
@@ -186,9 +218,9 @@ int main(int argc, char* argv[])
         }
 
         // image training and classification
-        string modelDT = "/tmp/modelDT.txt";
-        string modelGBT = "/tmp/modelGBT.txt";
-        string modelSVM = "/tmp/modelSVM.txt";
+        string modelDT = "/tmp/modelDT" + sufix;
+        string modelGBT = "/tmp/modelGBT.txt" + sufix;
+        string modelSVM = "/tmp/modelSVM.txt" + sufix;
         oll::LabelImageType::Pointer DTClassified = oll::LabelImageType::New();
         oll::LabelImageType::Pointer GBTClassified = oll::LabelImageType::New();
         oll::LabelImageType::Pointer SVMClassified = oll::LabelImageType::New();
@@ -199,7 +231,12 @@ int main(int argc, char* argv[])
         oll::LabelImageType::Pointer fusedImage;
         if (dt)
         {
-            oll::train(inputImage, trainingSites, modelDT, classAtribure, oll::desicionTree);
+            cout << "Decision tree classification ";
+
+            //TODO tu si skončil, výpis časom trvania jednotlivých operácií
+
+            std::time(&timer1);
+            oll::train(inputImage, trainingSites, modelDT, classAtribure, oll::desicionTree, false, optimize);
             oll::classify(inputImage, modelDT, DTClassified);
             DTcm = oll::vypocitajChybovuMaticu(DTClassified, groundTruthVector, classAtribure);
             matrices.push_back(DTcm.confMat);
@@ -209,7 +246,7 @@ int main(int argc, char* argv[])
         }
         if (gbt)
         {
-            oll::train(inputImage, trainingSites, modelGBT, classAtribure, oll::gradientBoostedTree);
+            oll::train(inputImage, trainingSites, modelGBT, classAtribure, oll::gradientBoostedTree, false, optimize);
             oll::classify(inputImage, modelGBT, GBTClassified);
             GBTcm = oll::vypocitajChybovuMaticu(GBTClassified, groundTruthVector, classAtribure);
             matrices.push_back(GBTcm.confMat);
@@ -219,7 +256,7 @@ int main(int argc, char* argv[])
         }
         if (svm)
         {
-            oll::train(inputImage, trainingSites, modelSVM, classAtribure, oll::libSVM);
+            oll::train(inputImage, trainingSites, modelSVM, classAtribure, oll::libSVM, svmlin, optimize);
             oll::classify(inputImage, modelSVM, SVMClassified);
             SVMcm = oll::vypocitajChybovuMaticu(SVMClassified, groundTruthVector, classAtribure);
             matrices.push_back(SVMcm.confMat);
@@ -267,7 +304,7 @@ int main(int argc, char* argv[])
                 oll::computeSlopeRaster(alignedDem, slope);
 
                 oll::LabelImageType::Pointer podSklon = oll::LabelImageType::New();
-                oll::podSklon(podPlod, slope, podSklon, 5);
+                oll::podSklon(podPlod, slope, podSklon, 8.13);
 
                 if (vm.count("ocs"))
                 {
@@ -278,7 +315,7 @@ int main(int argc, char* argv[])
                 if (vm.count("out"))
                 {
                     oll::LabelImageType::Pointer podRozloh = oll::LabelImageType::New();
-                    oll::podRozloh(podSklon, podRozloh, 150);
+                    oll::podRozloh(podSklon, podRozloh, 6000);
                     oll::ulozRaster(podRozloh, outAll);
                 }
             }
@@ -286,8 +323,18 @@ int main(int argc, char* argv[])
     }
     if (vm.count("oa"))
     {
+        oll::satellites satellite;
+        if (vm.count("l8"))
+        {
+            satellite = oll::Landsat8;
+        }
+        else if (vm.count("s2"))
+        {
+            satellite = oll::Sentinel2;
+        }
+
         oll::DoubleImageType::Pointer albedo = oll::DoubleImageType::New();
-        oll::albedo(inputImage, oll::Sentinel2, albedo);
+        oll::albedo(inputImage, satellite, albedo);
         oll::ulozRaster(albedo, outAlbedo);
     }
 
