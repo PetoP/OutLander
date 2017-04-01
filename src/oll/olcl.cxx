@@ -1,4 +1,4 @@
- #include "olcl.hxx"
+#include "olcl.hxx"
 
 namespace oll
 {
@@ -151,7 +151,8 @@ namespace oll
             else
             {
                 // TODO: redirect svm output
-                typedef otb::LibSVMMachineLearningModel< VectorImageType::InternalPixelType, ListSampleGeneratorType::ClassLabelType > SVMType;
+                typedef otb::LibSVMMachineLearningModel< VectorImageType::InternalPixelType, ListSampleGeneratorType::ClassLabelType >
+                    SVMType;
                 SVMType::Pointer SVMClassifier = SVMType::New();
                 SVMClassifier->SetKernelType(LINEAR);
                 SVMClassifier->SetInputListSample(sampleGenerator->GetTrainingListSample());
@@ -609,7 +610,9 @@ namespace oll
 
         for (sii.GoToBegin(), aii.GoToBegin(); !sii.IsAtEnd(); ++sii, ++aii)
         {
-            aii.Set((0.356 * sii.Get()[blue] + 0.130 * sii.Get()[red] + 0.0373 * sii.Get()[nir1] + 0.085 * sii.Get()[nir2] + 0.072 * sii.Get()[swir] - 0.0018) / 101.6);
+            aii.Set((0.356 * sii.Get()[blue] + 0.130 * sii.Get()[red] + 0.0373 * sii.Get()[nir1] + 0.085 * sii.Get()[nir2] +
+                     0.072 * sii.Get()[swir] - 0.0018) /
+                    101.6);
         }
     }
 
@@ -620,24 +623,42 @@ namespace oll
         cmm->SetConfusionMatrix(cmd.confMat);
         cmm->Compute();
 
+        int origPrec = outStream.precision();
+        outStream.precision(3);
         if (perClass)
         {
-            outStream << "class,kappa" << std::endl;
-            double a, b, c, d;
+            outStream << std::endl << "Class\tUA\tPA\tF-Score" << std::endl << "-------------------------------" << std::endl;
             for (auto& cl : cmm->GetMapOfClasses())
             {
-                a = b = c = d = 0;
-                a = cmm->GetTruePositiveValues()[cl.second];
-                b = cmm->GetFalseNegativeValues()[cl.second];
-                c = cmm->GetFalsePositiveValues()[cl.second];
-                d = cmm->GetTrueNegativeValues()[cl.second];
-
-                outStream << +cl.first << "," << oll::kappa(a, b, c, d) << std::endl;
+                outStream << cl.first << "\t" << cmm->GetPrecisions()[cl.second] << "\t" << cmm->GetRecalls()[cl.second] << "\t"
+                          << cmm->GetFScores()[cl.second] << std::endl;
             }
-            outStream << ",";
         }
 
-        outStream << cmm->GetKappaIndex() << std::endl;
+        // computation of overal precision, overal recall and overal fscore
+        int r = cmm->GetNumberOfClasses();
+
+        double overalPrecision, overalRecall, overalFscore;
+        overalPrecision = overalRecall = 0;
+
+        for (int i = 0; i < r; ++i)
+        {
+            overalPrecision += cmm->GetPrecisions()[i];
+            overalRecall += cmm->GetRecalls()[i];
+        }
+        overalPrecision /= r;
+        overalRecall /= r;
+        overalFscore = (2 * overalPrecision * overalRecall) / (overalPrecision + overalRecall);
+
+        outStream << "-------------------------------" << std::endl
+                  << "OA: " << cmm->GetOverallAccuracy() << "  UA: " << overalPrecision << "  PA: " << overalRecall << std::endl
+                  << "F-Score: " << overalFscore << "  Kappa: " << cmm->GetKappaIndex() << std::endl
+                  << std::endl;
+        // outStream << "-------------------------------" << std::endl
+        //           << "OA: " << cmm->GetOverallAccuracy() << "  UA: " << overalPrecision << "  PA: " << overalRecall << std::endl
+        //           << "F-Score: " << overalFscore << "  Kappa: " << cmm->GetKappaIndex() << std::endl << std::endl;
+
+        outStream.precision(origPrec);
     }
 
     double kappa(double a, double b, double c, double d)

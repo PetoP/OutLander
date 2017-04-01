@@ -77,14 +77,16 @@ int main(int argc, char* argv[])
         {
             svm = gbt = dt = true;
             numClassifiers = 3;
+            if (vm.count("linsvm"))
+            {
+                svmlin = true;
+            }
         }
         else
         {
             if (vm.count("linsvm"))
             {
                 svmlin = true;
-                svm = true;
-                numClassifiers++;
             }
 
             if (vm.count("svm"))
@@ -231,32 +233,49 @@ int main(int argc, char* argv[])
         oll::LabelImageType::Pointer fusedImage;
         if (dt)
         {
-            cout << "Decision tree classification ";
+            cout << "DT training ";
+            cout.flush();
 
-            //TODO tu si skončil, výpis časom trvania jednotlivých operácií
-
-            std::time(&timer1);
             oll::train(inputImage, trainingSites, modelDT, classAtribure, oll::desicionTree, false, optimize);
+            cout << " classification  ";
+            cout.flush();
             oll::classify(inputImage, modelDT, DTClassified);
             DTcm = oll::vypocitajChybovuMaticu(DTClassified, groundTruthVector, classAtribure);
             matrices.push_back(DTcm.confMat);
             maps.push_back(DTcm.mapOfClasses);
             classifiedImages->PushBack(DTClassified);
             fusedImage = DTClassified;
+
+            cout << " DONE" << endl;
+
+            oll::printConfMat(DTcm, cout);
         }
         if (gbt)
         {
+            cout << "GBT training ";
+            cout.flush();
+
             oll::train(inputImage, trainingSites, modelGBT, classAtribure, oll::gradientBoostedTree, false, optimize);
+            cout << " classification  ";
+            cout.flush();
             oll::classify(inputImage, modelGBT, GBTClassified);
             GBTcm = oll::vypocitajChybovuMaticu(GBTClassified, groundTruthVector, classAtribure);
             matrices.push_back(GBTcm.confMat);
             maps.push_back(GBTcm.mapOfClasses);
             classifiedImages->PushBack(GBTClassified);
             fusedImage = GBTClassified;
+
+            cout << " DONE" << endl;
+
+            oll::printConfMat(GBTcm, cout);
         }
         if (svm)
         {
+            cout << "SVM training ";
+            cout.flush();
+
             oll::train(inputImage, trainingSites, modelSVM, classAtribure, oll::libSVM, svmlin, optimize);
+            cout << " classification  ";
             oll::classify(inputImage, modelSVM, SVMClassified);
             SVMcm = oll::vypocitajChybovuMaticu(SVMClassified, groundTruthVector, classAtribure);
             matrices.push_back(SVMcm.confMat);
@@ -264,39 +283,55 @@ int main(int argc, char* argv[])
             classifiedImages->PushBack(SVMClassified);
             fusedImage = SVMClassified;
 
+            cout << " DONE" << endl;
+
             oll::printConfMat(SVMcm, cout);
         }
 
-        // oll::ulozRaster(DTClassified, "/home/peter/classified_DT.tif");
-        // oll::ulozRaster(GBTClassified, "/home/peter/classified_GBT.tif");
-        // oll::ulozRaster(SVMClassified, "/home/peter/classified_SVM.tif");
-
-        if (numClassifiers >= 1)
+        if (numClassifiers > 1)
         {
+            cout << "DS fusion ";
+            cout.flush();
+
             // fusion of classified images
             oll::LabelImageType::Pointer fusedImage = oll::LabelImageType::New();
             oll::dsf(classifiedImages, matrices, maps, 0, 255, fusedImage);
+
+            cout << " DONE" << endl;
         };
 
         if (vm.count("olr"))
         {
             oll::ulozRaster(fusedImage, outRecl);
+            cout << "Classified raster  SAVED" << endl;
         }
 
         if (reclassify)
         {
+            cout << "Crop type and height reclassification ";
+            cout.flush();
+
             // condition of crop applicaiton
             oll::LabelImageType::Pointer podPlod = oll::LabelImageType::New();
             oll::reclassifyRaster(fusedImage, podPlod, reclassificationRules);
 
+            cout << " DONE ";
+            cout.flush();
+
             if (vm.count("occ"))
             {
                 oll::ulozRaster(podPlod, outPodPlod);
+                cout << "SAVED";
             }
+
+            cout << endl;
 
             // condition of slope application
             if (vm.count("ocs") || vm.count("out"))
             {
+                cout << "Condition of slope ";
+                cout.flush();
+
                 oll::DoubleImageType::Pointer alignedDem = oll::DoubleImageType::New();
                 oll::alignDEM(inputImage, alignedDem);
 
@@ -306,23 +341,38 @@ int main(int argc, char* argv[])
                 oll::LabelImageType::Pointer podSklon = oll::LabelImageType::New();
                 oll::podSklon(podPlod, slope, podSklon, 8.13);
 
+                cout << " DONE ";
+                cout.flush();
+
                 if (vm.count("ocs"))
                 {
                     oll::ulozRaster(podSklon, outPodSklon);
+                    cout << "SAVED";
                 }
+
+                cout << endl;
 
                 // condition of area application
                 if (vm.count("out"))
                 {
+                    cout << "Condition of area size ";
+                    cout.flush();
+
                     oll::LabelImageType::Pointer podRozloh = oll::LabelImageType::New();
-                    oll::podRozloh(podSklon, podRozloh, 6000);
+                    oll::podRozloh(podSklon, podRozloh, 12000);
+                    cout << " DONE ";
+                    cout.flush();
                     oll::ulozRaster(podRozloh, outAll);
+                    cout << "SAVED" << endl;
                 }
             }
         }
     }
     if (vm.count("oa"))
     {
+        cout << "Albedo calculation ";
+        cout.flush();
+
         oll::satellites satellite;
         if (vm.count("l8"))
         {
@@ -335,7 +385,12 @@ int main(int argc, char* argv[])
 
         oll::DoubleImageType::Pointer albedo = oll::DoubleImageType::New();
         oll::albedo(inputImage, satellite, albedo);
+
+        cout << " DONE ";
+        cout.flush();
+
         oll::ulozRaster(albedo, outAlbedo);
+        cout << " SAVED" << endl;
     }
 
     return 0;
