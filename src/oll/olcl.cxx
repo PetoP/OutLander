@@ -124,7 +124,7 @@ namespace oll
         sampleGenerator->SetInput(image);
         sampleGenerator->SetInputVectorData(trainingSites);
         sampleGenerator->SetClassKey(classAttributeName);
-        // sampleGenerator->SetBoundByMin(false);
+        sampleGenerator->SetBoundByMin(false); // dôležité!!
 
         sampleGenerator->Update();
 
@@ -135,14 +135,10 @@ namespace oll
         {
             if (!linear)
             {
-                typedef otb::SVMMachineLearningModel< VectorImageType::InternalPixelType, ListSampleGeneratorType::ClassLabelType > SVMType;
+                typedef otb::LibSVMMachineLearningModel< VectorImageType::InternalPixelType, ListSampleGeneratorType::ClassLabelType > SVMType;
                 SVMType::Pointer SVMClassifier = SVMType::New();
-                SVMClassifier->SetKernelType(CvSVM::RBF);
-                SVMClassifier->SetSVMType(CvSVM::NU_SVC);
-                SVMClassifier->SetNu(0.5);
-                SVMClassifier->SetGamma(1.0e-07);
-                SVMClassifier->SetC(10000000000);
-                SVMClassifier->SetParameterOptimization(optimize);
+                SVMClassifier->SetKernelType(POLY);
+
                 SVMClassifier->SetInputListSample(sampleGenerator->GetTrainingListSample());
                 SVMClassifier->SetTargetListSample(sampleGenerator->GetTrainingListLabel());
                 SVMClassifier->Train();
@@ -150,7 +146,6 @@ namespace oll
             }
             else
             {
-                // TODO: redirect svm output
                 typedef otb::LibSVMMachineLearningModel< VectorImageType::InternalPixelType, ListSampleGeneratorType::ClassLabelType >
                     SVMType;
                 SVMType::Pointer SVMClassifier = SVMType::New();
