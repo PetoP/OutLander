@@ -17,7 +17,6 @@
 #include "otbDecisionTreeMachineLearningModel.h"
 #include "otbGenericMapProjection.h"
 #include "otbGenericRSResampleImageFilter.h"
-#include "otbGradientBoostedTreeMachineLearningModel.h"
 #include "otbImage.h"
 #include "otbImageClassificationFilter.h"
 #include "otbImageFileReader.h"
@@ -97,8 +96,8 @@ namespace oll
     typedef itk::ImageRegionIterator< LabelImageType > LabelImageRegionIteratorType;
     typedef itk::ImageRegionIterator< DoubleImageType > DoubleImageRegionIteratorType;
     typedef itk::ImageRegionConstIterator< VectorImageType > ImageRegionConstIteratorType;
-
     typedef itk::ImageRegionConstIterator< DoubleImageType > DoubleImageRegionConstIteratorType;
+    typedef itk::ImageRegionConstIterator< LabelImageType > LabelImageRegionConstIteratorType;
     typedef itk::GradientMagnitudeImageFilter< DoubleImageType, DoubleImageType > GradientMagnitudeImageFilterType;
     typedef itk::AtanImageFilter< DoubleImageType, DoubleImageType > AtanImageFilterType;
     typedef otb::MultiplyByScalarImageFilter< DoubleImageType, DoubleImageType > MultiplyByScalarImageFilterType;
@@ -129,7 +128,6 @@ namespace oll
     enum trainingMethod
     {
         libSVM,
-        gradientBoostedTree,
         desicionTree
     };
 
@@ -171,6 +169,8 @@ namespace oll
                 oll::DoubleImageType::Pointer albedoRaster);
     void printConfMat(confMatData& cmd, std::ostream& outStream, bool perClass = true);
     double kappa(double a, double b, double c, double d);
+    void mapOfSuitabilityCreation(oll::LabelImageType::Pointer landcover, oll::LabelImageType::Pointer conditions,
+                                  oll::LabelImageType::Pointer outputRaster);
 }
 
 #endif

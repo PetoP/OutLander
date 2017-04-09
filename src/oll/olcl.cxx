@@ -158,19 +158,6 @@ namespace oll
 
             break;
         }
-        case oll::gradientBoostedTree:
-        {
-            typedef otb::GradientBoostedTreeMachineLearningModel< VectorImageType::InternalPixelType,
-                                                                  ListSampleGeneratorType::ClassLabelType >
-                GBTType;
-            GBTType::Pointer GBTClassifier = GBTType::New();
-            GBTClassifier->SetInputListSample(sampleGenerator->GetTrainingListSample());
-            GBTClassifier->SetTargetListSample(sampleGenerator->GetTrainingListLabel());
-
-            GBTClassifier->Train();
-            GBTClassifier->Save(outputModel);
-            break;
-        }
         case oll::desicionTree:
         {
             typedef otb::DecisionTreeMachineLearningModel< VectorImageType::InternalPixelType, ListSampleGeneratorType::ClassLabelType >
@@ -670,4 +657,49 @@ namespace oll
 
         return (po - pe) / (1 - pe);
     }
+
+    void mapOfSuitabilityCreation(oll::LabelImageType::Pointer landcover, oll::LabelImageType::Pointer conditions,
+                                  oll::LabelImageType::Pointer outputRaster)
+    {
+        outputRaster->Graft(landcover);
+        outputRaster->Update();
+
+        oll::LabelImageRegionConstIteratorType lii(landcover, landcover->GetRequestedRegion());
+        oll::LabelImageRegionConstIteratorType cii(conditions, landcover->GetRequestedRegion());
+        oll::LabelImageRegionIteratorType sii(outputRaster, landcover->GetRequestedRegion());
+
+        std::map<LabelPixelType, LabelPixelType> outputClasses =
+            {
+                {3, 1},
+                {1, 3},
+                {2, 4},
+                {6, 5},
+                {7, 5}
+            };
+
+        for (lii.GoToBegin(); !lii.IsAtEnd(); ++lii, ++cii, ++sii)
+        {
+            LabelPixelType luv = lii.Value();
+            std::map<LabelPixelType, LabelPixelType>::iterator i = outputClasses.find(luv);
+            if (i != outputClasses.end())
+            {
+                sii.Set(i->second);
+            }
+            else
+            {
+                LabelPixelType cv = cii.Value();
+                LabelPixelType sv;
+                if (cv == 0)
+                    sv = 23;
+                else if (cv == 1)
+                    sv = 21;
+                else
+                    sv = 22;
+
+                sii.Set(sv);
+            }
+        }
+
+    }
+
 }

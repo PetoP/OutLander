@@ -15,11 +15,10 @@ int main(int argc, char* argv[])
     namespace po = boost::program_options;
 
     // variables to hold CLI options
-    string sourceImage, trainingSamples, groundTruth, classAtribure, demDir, reclasRulesFile, outRecl, outPodPlod, outPodSklon, outAll,
-        outAlbedo;
+    string sourceImage, trainingSamples, groundTruth, classAtribure, demDir, reclasRulesFile, outRecl, outPodPlod, outPodSklon, outPodRozloh,
+        outAll, outAlbedo;
     bool svm = false;
     bool svmlin = false;
-    bool gbt = false;
     bool dt = false;
     int numClassifiers = 0;
     bool classify = false;
@@ -33,7 +32,6 @@ int main(int argc, char* argv[])
         ("svm,s", "Use SVM classifier.")
         ("linsvm,l", "Use linear SVM classifier.")
         ("opt,o", "Optimize classifier parmetters.")
-        ("gbt,g", "Use GBT classifier.")
         ("dt,d", "Use DT classifier.")
         ("l8", "Satellite is L8")
         ("s2", "Satellite is S2")
@@ -46,10 +44,11 @@ int main(int argc, char* argv[])
         ("olr", po::value< string >(&outRecl), "Output landcover raster.")
         ("occ", po::value< string >(&outPodPlod), "Output condition of crop raster.")
         ("ocs", po::value< string >(&outPodSklon), "Output condition of slope raster.")
-        ("out", po::value< string >(&outAll), "Output raster with all condition applied.")
+        ("oca", po::value< string >(&outPodRozloh), "Output condition of area raster.")
+        ("out", po::value< string >(&outAll), "Output raster of suitability.")
         ("oa", po::value< string >(&outAlbedo), "Output albedo raster.");
 
-    string usage = " [-hslgd] [--l8] [--s2] --isr --its --igt --ica --demdir [--irr] [--olr] [--occ] [--ocs] [--oa]";
+    string usage = " [-hslg] [--l8] [--s2] --isr --its --igt --ica --demdir [--irr] [--olr] [--occ] [--ocs] [--oa]";
 
     // CLI options handling
     po::variables_map vm;
@@ -73,9 +72,9 @@ int main(int argc, char* argv[])
         vm.count("occ") || vm.count("ocs") || vm.count("oa") || vm.count("out"))
     {
         classify = true;
-        if (!vm.count("svm") && !vm.count("gbt") && !vm.count("dt"))
+        if (!vm.count("svm") && !vm.count("dt"))
         {
-            svm = gbt = dt = true;
+            svm  = dt = true;
             numClassifiers = 3;
             if (vm.count("linsvm"))
             {
@@ -92,12 +91,6 @@ int main(int argc, char* argv[])
             if (vm.count("svm"))
             {
                 svm = true;
-                numClassifiers++;
-            }
-
-            if (vm.count("gbt"))
-            {
-                gbt = true;
                 numClassifiers++;
             }
 
@@ -221,12 +214,10 @@ int main(int argc, char* argv[])
 
         // image training and classification
         string modelDT = "/tmp/modelDT" + sufix;
-        string modelGBT = "/tmp/modelGBT.txt" + sufix;
         string modelSVM = "/tmp/modelSVM.txt" + sufix;
         oll::LabelImageType::Pointer DTClassified = oll::LabelImageType::New();
-        oll::LabelImageType::Pointer GBTClassified = oll::LabelImageType::New();
         oll::LabelImageType::Pointer SVMClassified = oll::LabelImageType::New();
-        oll::confMatData DTcm, GBTcm, SVMcm;
+        oll::confMatData DTcm, SVMcm;
         std::vector< oll::ConfusionMatrixType > matrices;
         std::vector< oll::ConfusionMatrixCalculatorType::MapOfClassesType > maps;
         oll::LabelImageListType::Pointer classifiedImages = oll::LabelImageListType::New();
@@ -250,25 +241,7 @@ int main(int argc, char* argv[])
 
             oll::printConfMat(DTcm, cout);
         }
-        if (gbt)
-        {
-            cout << "GBT training ";
-            cout.flush();
 
-            oll::train(inputImage, trainingSites, modelGBT, classAtribure, oll::gradientBoostedTree, false, optimize);
-            cout << " classification  ";
-            cout.flush();
-            oll::classify(inputImage, modelGBT, GBTClassified);
-            GBTcm = oll::vypocitajChybovuMaticu(GBTClassified, groundTruthVector, classAtribure);
-            matrices.push_back(GBTcm.confMat);
-            maps.push_back(GBTcm.mapOfClasses);
-            classifiedImages->PushBack(GBTClassified);
-            fusedImage = GBTClassified;
-
-            cout << " DONE" << endl;
-
-            oll::printConfMat(GBTcm, cout);
-        }
         if (svm)
         {
             cout << "SVM training ";
@@ -327,7 +300,7 @@ int main(int argc, char* argv[])
             cout << endl;
 
             // condition of slope application
-            if (vm.count("ocs") || vm.count("out"))
+            if (vm.count("ocs") || vm.count("out") || vm.count("oca") || vm.count("out"))
             {
                 cout << "Condition of slope ";
                 cout.flush();
@@ -353,21 +326,39 @@ int main(int argc, char* argv[])
                 cout << endl;
 
                 // condition of area application
-                if (vm.count("out"))
+                cout << "Condition of area size ";
+                cout.flush();
+
+                oll::LabelImageType::Pointer podRozloh = oll::LabelImageType::New();
+                oll::podRozloh(podSklon, podRozloh, 12000);
+                cout << " DONE ";
+
+                cout.flush();
+                if (vm.count("oca"))
                 {
-                    cout << "Condition of area size ";
+                    oll::ulozRaster(podRozloh, outPodRozloh);
+                    cout << "SAVED";
+                }
+                cout << endl;
+
+                if(vm.count("out"))
+                {
+                    cout << "Suitability map reclassification ";
                     cout.flush();
 
-                    oll::LabelImageType::Pointer podRozloh = oll::LabelImageType::New();
-                    oll::podRozloh(podSklon, podRozloh, 12000);
+                    oll::LabelImageType::Pointer suitable = oll::LabelImageType::New();
+                    oll::mapOfSuitabilityCreation(fusedImage, podRozloh, suitable);
                     cout << " DONE ";
                     cout.flush();
-                    oll::ulozRaster(podRozloh, outAll);
-                    cout << "SAVED" << endl;
+
+                    oll::ulozRaster(suitable, outAll);
+                    cout << " SAVED" << endl;
+
                 }
             }
         }
     }
+
     if (vm.count("oa"))
     {
         cout << "Albedo calculation ";
