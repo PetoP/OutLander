@@ -135,7 +135,8 @@ namespace oll
         {
             if (!linear)
             {
-                typedef otb::LibSVMMachineLearningModel< VectorImageType::InternalPixelType, ListSampleGeneratorType::ClassLabelType > SVMType;
+                typedef otb::LibSVMMachineLearningModel< VectorImageType::InternalPixelType, ListSampleGeneratorType::ClassLabelType >
+                    SVMType;
                 SVMType::Pointer SVMClassifier = SVMType::New();
                 SVMClassifier->SetKernelType(POLY);
 
@@ -592,9 +593,8 @@ namespace oll
 
         for (sii.GoToBegin(), aii.GoToBegin(); !sii.IsAtEnd(); ++sii, ++aii)
         {
-            aii.Set((0.356 * sii.Get()[blue] + 0.130 * sii.Get()[red] + 0.0373 * sii.Get()[nir1] + 0.085 * sii.Get()[nir2] +
-                     0.072 * sii.Get()[swir] - 0.0018) /
-                    101.6);
+            aii.Set(0.356 * sii.Get()[blue] / 10000 + 0.130 * sii.Get()[red] / 10000 + 0.373 * sii.Get()[nir1] / 10000 + 0.085 * sii.Get()[nir2] / 10000 +
+                    0.072 * sii.Get()[swir] / 10000 - 0.0018);
         }
     }
 
@@ -636,26 +636,7 @@ namespace oll
                   << "OA: " << cmm->GetOverallAccuracy() << "  UA: " << overalPrecision << "  PA: " << overalRecall << std::endl
                   << "F-Score: " << overalFscore << "  Kappa: " << cmm->GetKappaIndex() << std::endl
                   << std::endl;
-        // outStream << "-------------------------------" << std::endl
-        //           << "OA: " << cmm->GetOverallAccuracy() << "  UA: " << overalPrecision << "  PA: " << overalRecall << std::endl
-        //           << "F-Score: " << overalFscore << "  Kappa: " << cmm->GetKappaIndex() << std::endl << std::endl;
-
         outStream.precision(origPrec);
-    }
-
-    double kappa(double a, double b, double c, double d)
-    {
-        double dev, po, ma, mb, pe;
-
-        dev = a + b + c + d;
-
-        po = (a + d) / dev;
-
-        ma = ((a + b) * (a + c)) / dev;
-        mb = ((c + d) * (b + d)) / dev;
-        pe = (ma + mb) / dev;
-
-        return (po - pe) / (1 - pe);
     }
 
     void mapOfSuitabilityCreation(oll::LabelImageType::Pointer landcover, oll::LabelImageType::Pointer conditions,
@@ -668,19 +649,12 @@ namespace oll
         oll::LabelImageRegionConstIteratorType cii(conditions, landcover->GetRequestedRegion());
         oll::LabelImageRegionIteratorType sii(outputRaster, landcover->GetRequestedRegion());
 
-        std::map<LabelPixelType, LabelPixelType> outputClasses =
-            {
-                {3, 1},
-                {1, 3},
-                {2, 4},
-                {6, 5},
-                {7, 5}
-            };
+        std::map< LabelPixelType, LabelPixelType > outputClasses = {{3, 1}, {1, 3}, {2, 4}, {6, 5}, {7, 5}};
 
         for (lii.GoToBegin(); !lii.IsAtEnd(); ++lii, ++cii, ++sii)
         {
             LabelPixelType luv = lii.Value();
-            std::map<LabelPixelType, LabelPixelType>::iterator i = outputClasses.find(luv);
+            std::map< LabelPixelType, LabelPixelType >::iterator i = outputClasses.find(luv);
             if (i != outputClasses.end())
             {
                 sii.Set(i->second);
@@ -699,7 +673,5 @@ namespace oll
                 sii.Set(sv);
             }
         }
-
     }
-
 }

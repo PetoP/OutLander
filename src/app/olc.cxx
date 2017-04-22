@@ -15,8 +15,8 @@ int main(int argc, char* argv[])
     namespace po = boost::program_options;
 
     // variables to hold CLI options
-    string sourceImage, trainingSamples, groundTruth, classAtribure, demDir, reclasRulesFile, outRecl, outPodPlod, outPodSklon, outPodRozloh,
-        outAll, outAlbedo;
+    string sourceImage, trainingSamples, groundTruth, classAtribure, demDir, reclasRulesFile, outRecl, outPodPlod, outPodSklon,
+        outPodRozloh, outAll, outAlbedo;
     bool svm = false;
     bool svmlin = false;
     bool dt = false;
@@ -27,26 +27,20 @@ int main(int argc, char* argv[])
 
     // CLI options declaration
     po::options_description desc("Allowed options");
-    desc.add_options()
-        ("help,h", "produce help message")
-        ("svm,s", "Use SVM classifier.")
-        ("linsvm,l", "Use linear SVM classifier.")
-        ("opt,o", "Optimize classifier parmetters.")
-        ("dt,d", "Use DT classifier.")
-        ("l8", "Satellite is L8")
-        ("s2", "Satellite is S2")
-        ("isr", po::value< string >(&sourceImage), "Input multiband satellite raster data.")
-        ("its", po::value< string >(&trainingSamples), "Input training samples vector.")
-        ("igt", po::value< string >(&groundTruth), "Input ground truth vector.")
-        ("ica", po::value< string >(&classAtribure), "Class attribute name in input training samples and ground truth vectors.")
-        ("irr", po::value< string >(&reclasRulesFile), "Text file containing reclassification rules (1)")
-        ("demdir", po::value< string >(&demDir), "Directory containing SRTM hgt files.")
-        ("olr", po::value< string >(&outRecl), "Output landcover raster.")
-        ("occ", po::value< string >(&outPodPlod), "Output condition of crop raster.")
-        ("ocs", po::value< string >(&outPodSklon), "Output condition of slope raster.")
-        ("oca", po::value< string >(&outPodRozloh), "Output condition of area raster.")
-        ("out", po::value< string >(&outAll), "Output raster of suitability.")
-        ("oa", po::value< string >(&outAlbedo), "Output albedo raster.");
+    desc.add_options()("help,h", "produce help message")("svm,s", "Use SVM classifier.")("linsvm,l", "Use linear SVM classifier.")(
+        "opt,o", "Optimize classifier parmetters.")("dt,d", "Use DT classifier.")("l8", "Satellite is L8")("s2", "Satellite is S2")(
+        "isr", po::value< string >(&sourceImage), "Input multiband satellite raster data.")(
+        "its", po::value< string >(&trainingSamples), "Input training samples vector.")("igt", po::value< string >(&groundTruth),
+                                                                                        "Input ground truth vector.")(
+        "ica", po::value< string >(&classAtribure), "Class attribute name in input training samples and ground truth vectors.")(
+        "irr", po::value< string >(&reclasRulesFile),
+        "Text file containing reclassification rules (1)")("demdir", po::value< string >(&demDir), "Directory containing SRTM hgt files.")(
+        "olr", po::value< string >(&outRecl), "Output landcover raster.")("occ", po::value< string >(&outPodPlod),
+                                                                          "Output condition of crop raster.")(
+        "ocs", po::value< string >(&outPodSklon), "Output condition of slope raster.")("oca", po::value< string >(&outPodRozloh),
+                                                                                       "Output condition of area raster.")(
+        "out", po::value< string >(&outAll), "Output raster of suitability.")("oa", po::value< string >(&outAlbedo),
+                                                                              "Output albedo raster.");
 
     string usage = " [-hslg] [--l8] [--s2] --isr --its --igt --ica --demdir [--irr] [--olr] [--occ] [--ocs] [--oa]";
 
@@ -68,13 +62,12 @@ int main(int argc, char* argv[])
         parametersOk = false;
     }
 
-    if (!vm.count(("oa")) || (vm.count("its")) || vm.count("igt") || vm.count("ica") || vm.count("demdir") || vm.count("olr") ||
-        vm.count("occ") || vm.count("ocs") || vm.count("oa") || vm.count("out"))
+    if (vm.count("its") || vm.count("igt") || vm.count("ica") || vm.count("olr") || vm.count("occ") || vm.count("ocs") || vm.count("out"))
     {
         classify = true;
         if (!vm.count("svm") && !vm.count("dt"))
         {
-            svm  = dt = true;
+            svm = dt = true;
             numClassifiers = 3;
             if (vm.count("linsvm"))
             {
@@ -140,13 +133,14 @@ int main(int argc, char* argv[])
         {
             reclassify = true;
         }
+    }
 
-        if (vm.count("oa")) {
-            if ((!vm.count("l8") && !vm.count("s2")) || (vm.count("l8") && vm.count("s2")))
-            {
-                cout << "You need to specify satellite for albedo calculation!" << endl;
-                parametersOk = false;
-            }
+    if (vm.count("oa"))
+    {
+        if ((!vm.count("l8") && !vm.count("s2")) || (vm.count("l8") && vm.count("s2")))
+        {
+            cout << "You need to specify satellite for albedo calculation!" << endl;
+            parametersOk = false;
         }
     }
 
@@ -341,7 +335,7 @@ int main(int argc, char* argv[])
                 }
                 cout << endl;
 
-                if(vm.count("out"))
+                if (vm.count("out"))
                 {
                     cout << "Suitability map reclassification ";
                     cout.flush();
@@ -353,7 +347,6 @@ int main(int argc, char* argv[])
 
                     oll::ulozRaster(suitable, outAll);
                     cout << " SAVED" << endl;
-
                 }
             }
         }

@@ -168,7 +168,6 @@ namespace oll
     void albedo(const oll::VectorImageType::Pointer satelliteImage, const oll::satellites satelliteType,
                 oll::DoubleImageType::Pointer albedoRaster);
     void printConfMat(confMatData& cmd, std::ostream& outStream, bool perClass = true);
-    double kappa(double a, double b, double c, double d);
     void mapOfSuitabilityCreation(oll::LabelImageType::Pointer landcover, oll::LabelImageType::Pointer conditions,
                                   oll::LabelImageType::Pointer outputRaster);
 }
