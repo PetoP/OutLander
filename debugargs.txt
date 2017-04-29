@@ -1,3 +1,0 @@
--s --isr /run/media/peter/WD/ZIK/diplomovka/snimky/casove_rady/16_04_2016.tif --its /run/media/peter/WD/ZIK/diplomovka/trenovacie_mnoziny/tren_l160416.shp --ica "plod_id" --igt /run/media/peter/WD/ZIK/diplomovka/trenovacie_mnoziny/truth_l160416.shp --demdir /run/media/peter/WD/ZIK/diplomovka/klasifikator/landsat_z_grassu/dem/ --olr ~/pokus.tif
-
---itd PG:dbname=diplomovka --itl tren --ica plod_id --iia id --oos /run/media/peter/WD/ZIK/diplomovka/OutLander/oos.csv --ocs /run/media/peter/WD/ZIK/diplomovka/OutLander/ocs.csv --isr /run/media/peter/WD/mapy/LANDSAT/LC81890262016203-SC20161206080205/L8.vrt

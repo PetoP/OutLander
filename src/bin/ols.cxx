@@ -1,4 +1,4 @@
-#include "../oll/olsl.hxx"
+#include "../lib/olsl.hxx"
 #include <boost/program_options.hpp>
 #include <iostream>
 

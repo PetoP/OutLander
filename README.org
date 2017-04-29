@@ -1,0 +1,13 @@
+* About OutLander
+
+This program applies methodology of land evaluation for glider outlanding. This methodology was tested using atmospherically corrected Sentinel-2 and Landsat 8 imagery. Program performs land cover classification using user defined training sites, classification quality assessment using user defined control sites and glider outlanding criteria applications using user defined reclassification file, DEM source and more.
+
+* Development status
+
+At this stage this program offers only basic functionality necessary for performation of land evaluation for glides outlandig methodology.
+
+* Install instructions
+
+This program directly depends on OrfeoToolbox, GDAL and Boost. OrfeoToolbox should be compiled with OpenCV and LibSVM.
+
+To build this program create separate build directory and from there run =cmake PATH_TO_OUTLANDER_ROOT -DCMAKE_INSTALL_PREFIX=/usr/; make=. To install program system wide run =make install= afterwards.

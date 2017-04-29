@@ -1,4 +1,4 @@
-#include "../oll/olcl.hxx"
+#include "../lib/olcl.hxx"
 #include <boost/program_options.hpp>
 #include <ctime>
 #include <iostream>
@@ -27,22 +27,28 @@ int main(int argc, char* argv[])
 
     // CLI options declaration
     po::options_description desc("Allowed options");
-    desc.add_options()("help,h", "produce help message")("svm,s", "Use SVM classifier.")("linsvm,l", "Use linear SVM classifier.")(
-        "opt,o", "Optimize classifier parmetters.")("dt,d", "Use DT classifier.")("l8", "Satellite is L8")("s2", "Satellite is S2")(
-        "isr", po::value< string >(&sourceImage), "Input multiband satellite raster data.")(
-        "its", po::value< string >(&trainingSamples), "Input training samples vector.")("igt", po::value< string >(&groundTruth),
-                                                                                        "Input ground truth vector.")(
-        "ica", po::value< string >(&classAtribure), "Class attribute name in input training samples and ground truth vectors.")(
-        "irr", po::value< string >(&reclasRulesFile),
-        "Text file containing reclassification rules (1)")("demdir", po::value< string >(&demDir), "Directory containing SRTM hgt files.")(
-        "olr", po::value< string >(&outRecl), "Output landcover raster.")("occ", po::value< string >(&outPodPlod),
-                                                                          "Output condition of crop raster.")(
-        "ocs", po::value< string >(&outPodSklon), "Output condition of slope raster.")("oca", po::value< string >(&outPodRozloh),
-                                                                                       "Output condition of area raster.")(
-        "out", po::value< string >(&outAll), "Output raster of suitability.")("oa", po::value< string >(&outAlbedo),
-                                                                              "Output albedo raster.");
+    desc.add_options()
+        ("help,h", "produce help message")
+        ("svm,s", "Use SVM classifier.")
+        ("linsvm,l", "Use linear SVM classifier.")
+        ("opt,o", "Optimize classifier parmetters.")
+        ("dt,d", "Use DT classifier.")
+        ("l8", "Satellite is L8")
+        ("s2", "Satellite is S2")
+        ("isr", po::value< string >(&sourceImage), "Input multiband satellite raster data.")
+        ("its", po::value< string >(&trainingSamples), "Input training samples vector.")
+        ("igt", po::value< string >(&groundTruth), "Input ground truth vector.")
+        ("ica", po::value< string >(&classAtribure), "Class attribute name in input training samples and ground truth vectors.")
+        ("irr", po::value< string >(&reclasRulesFile), "Text file containing reclassification rules (1)")
+        ("demdir", po::value< string >(&demDir), "Directory containing SRTM hgt files.")
+        ("olr", po::value< string >(&outRecl), "Output landcover raster.")
+        ("occ", po::value< string >(&outPodPlod), "Output criterium of crop raster.")
+        ("ocs", po::value< string >(&outPodSklon), "Output criterium of slope raster.")
+        ("oca", po::value< string >(&outPodRozloh), "Output criterium of area raster.")
+        ("out", po::value< string >(&outAll), "Output raster of suitability.")
+        ("oa", po::value< string >(&outAlbedo), "Output albedo raster.");
 
-    string usage = " [-hslg] [--l8] [--s2] --isr --its --igt --ica --demdir [--irr] [--olr] [--occ] [--ocs] [--oa]";
+    string usage = " [-hslod] [--l8] [--s2] --isr [--its] [--igt] [--ica] [--demdir] [--irr] [--olr] [--occ] [--ocs] [--oa]";
 
     // CLI options handling
     po::variables_map vm;
@@ -58,7 +64,7 @@ int main(int argc, char* argv[])
 
     if (!vm.count("isr"))
     {
-        cout << "Option isr is missing!" << endl;
+        cout << "Parameter isr is missing!" << endl;
         parametersOk = false;
     }
 
@@ -68,7 +74,7 @@ int main(int argc, char* argv[])
         if (!vm.count("svm") && !vm.count("dt"))
         {
             svm = dt = true;
-            numClassifiers = 3;
+            numClassifiers = 2;
             if (vm.count("linsvm"))
             {
                 svmlin = true;
@@ -76,15 +82,14 @@ int main(int argc, char* argv[])
         }
         else
         {
-            if (vm.count("linsvm"))
-            {
-                svmlin = true;
-            }
-
             if (vm.count("svm"))
             {
                 svm = true;
                 numClassifiers++;
+                if (vm.count("linsvm"))
+                {
+                    svmlin = true;
+                }
             }
 
             if (vm.count("dt"))
@@ -101,35 +106,35 @@ int main(int argc, char* argv[])
 
         if (!vm.count("its"))
         {
-            cout << "Option its is missing!" << endl;
+            cout << "Parameter its is missing!" << endl;
             parametersOk = false;
         }
 
         if (!vm.count("igt"))
         {
-            cout << "Option igt is missing!" << endl;
+            cout << "Parameter igt is missing!" << endl;
             parametersOk = false;
         }
 
         if (!vm.count("ica"))
         {
-            cout << "Option ica is missing!" << endl;
+            cout << "Parameter ica is missing!" << endl;
             parametersOk = false;
         }
 
         if (!vm.count("demdir"))
         {
-            cout << "Option demdir is missing!" << endl;
+            cout << "Parameter demdir is missing!" << endl;
             parametersOk = false;
         }
 
-        if (!vm.count("olr") && !vm.count("occ") && !vm.count("ocs") && !vm.count("out"))
+        if (!vm.count("olr") && !vm.count("occ") && !vm.count("ocs") && !vm.count("oca") && !vm.count("out"))
         {
             cout << "No output specified!" << endl;
             parametersOk = false;
         }
 
-        if (vm.count("occ") || vm.count("ocs") || vm.count("out"))
+        if (vm.count("occ") || vm.count("ocs") || vm.count("oca") || !vm.count("out"))
         {
             reclassify = true;
         }
@@ -278,7 +283,7 @@ int main(int argc, char* argv[])
             cout << "Crop type and height reclassification ";
             cout.flush();
 
-            // condition of crop applicaiton
+            // criterium of crop applicaiton
             oll::LabelImageType::Pointer podPlod = oll::LabelImageType::New();
             oll::reclassifyRaster(fusedImage, podPlod, reclassificationRules);
 
@@ -293,10 +298,10 @@ int main(int argc, char* argv[])
 
             cout << endl;
 
-            // condition of slope application
+            // criterium of slope application
             if (vm.count("ocs") || vm.count("out") || vm.count("oca") || vm.count("out"))
             {
-                cout << "Condition of slope ";
+                cout << "Criterium of slope ";
                 cout.flush();
 
                 oll::DoubleImageType::Pointer alignedDem = oll::DoubleImageType::New();
@@ -319,8 +324,8 @@ int main(int argc, char* argv[])
 
                 cout << endl;
 
-                // condition of area application
-                cout << "Condition of area size ";
+                // criterium of area application
+                cout << "Criterium of area size ";
                 cout.flush();
 
                 oll::LabelImageType::Pointer podRozloh = oll::LabelImageType::New();
@@ -358,11 +363,12 @@ int main(int argc, char* argv[])
         cout.flush();
 
         oll::satellites satellite;
+
         if (vm.count("l8"))
         {
             satellite = oll::Landsat8;
         }
-        else if (vm.count("s2"))
+        else
         {
             satellite = oll::Sentinel2;
         }

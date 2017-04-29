@@ -5,3 +5,4 @@ debug/
 **.clang-format
 /oos.csv
 /ocs.csv
+/cmake.sh
