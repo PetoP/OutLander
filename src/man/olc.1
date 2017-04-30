@@ -1,0 +1,120 @@
+
+.TH olc 1 "29.4.2017" "version 0.1"
+.SH NAME
+olc - OutLander program for application of methodology of land evaluation for glider outlanding
+.SH SYNOPSIS
+.SY olc
+.OP \-hslod
+.OP \--l8
+.OP \--s2
+.BI \--isr " file"
+.OP \--its file
+.OP \--igt file
+.OP \--ica name
+.OP \--irr file
+.OP \--demdir dir
+.OP \--olr file
+.OP \--occ file
+.OP \--ocs file
+.OP \--oca file
+.OP \--out file
+.OP \--oa file
+.YS
+
+.SH DESCRIPTION
+This program applies methodology of land evaluation for glider outlanding. This methodology was tested using atmospherically corrected Sentinel-2 and Landsat 8 imagery. Program performs land cover classification using user defined training samples, classification quality assessment using user defined control sites and glider outlanding criteria applications using user defined reclassification file, DEM source and more.
+
+.SH OPTIONS
+.TP
+.BI "-h, --help"
+Prints help message and exits.
+
+.TP
+.BI "-s, --svm"
+Use SVM classifier. By default, SVM with polynomial kernel and no optimization is used. LibSVM is used to perform actual training and classification.
+
+.TP
+.BI "-l, --linsvm"
+Use SVM classifier without kernel (linear SVM). To use this option
+.BI --svm
+must be present.
+
+.TP
+.BI "-o, --opt"
+Use SVM parameter optimization. Using this option results in heavy increase in computation time.
+
+.TP
+.BI "-d, --dt"
+Use Decision tree classifier. Uses OpenCV library.
+
+.TP
+.BI "--l8"
+Defines input satellite image source as Landsat 8. Needed for albedo calculation, otherwise useless. Input satellite raster file should contains atmospherically corrected bands 1-7 in 30 m resolution.
+
+.TP
+.BI "--s2"
+Defines input satellite image source as Sentinel-2. Needed for albedo calculation, otherwise useless. Input satellite raster file should contains atmospherically corrected bands 2-7, 8B (referenced as 8A in metadata), 11 and 12 in 20 m resolution or 1-7, 8B (referenced as 8A in metadata), 9, 11 and 12 in 60 m resolution.
+
+.TP
+.BI "--isr" " file"
+Specify input satellite image raster. This should by GeoTIFF including all sensor bands. If no albedo calculation is performed, image source or radiometrical pre-processing plays no role in program execution. In case of albedo calculation, satellite source must be defined, see
+.BI "--l8"
+and
+.BI "--s2"
+options.
+
+.TP
+.BI "--its" " file"
+Specify input training samples used for classifier training. File should be ESRI ShapeFILE including polygon geometries representing training samples geometry and attribude describing class of sample. Coordinate system doesn't need to be the same as input satellite image.
+
+.TP
+.BI "--igt" " file"
+Specify input control samples (ground truth) used for classification quality assessment. Form should be the same as for training samples.
+
+.TP
+.BI "--ica" " name"
+Specify name of attribute that specifies class of training and control samples.
+
+.TP
+.BI "--irr" " file"
+Text file containing reclassification rules for crop type and height criterion. File should contains two columns separated by space. First column defines source land cover category. Second column defines destination suitability category (0, 1 or 2).
+
+.EE
+Example:
+.EE
+1 0
+.EE
+2 1
+.EE
+3 2
+
+.TP
+.BI "--demdir" " dir"
+Specify directory containing DEM tiles. At this time, only directory containing SRTM HGT files is suported.
+
+.TP
+.BI "--olr" " file"
+Specify output land cover map GeoTIFF.
+
+.TP
+.BI "--occ" " file"
+Specify output criterion of crop type and height map GeoTIFF.
+
+.TP
+.BI "--ocs" " file"
+Specify output criterion of slope map GeoTIFF.
+
+.TP
+.BI "--oca" " file"
+Specify output criterion of area map GeoTIFF.
+
+.TP
+.BI "--out" " file"
+Specify output suitability map GeoTIFF.
+
+.TP
+.BI "--oa" " file"
+Specify output albedo map GeoTIFF.
+
+.SH AUTHOR
+Peter Piesecký (pieseckypeter@posteo.net)

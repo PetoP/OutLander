@@ -39,16 +39,16 @@ int main(int argc, char* argv[])
         ("its", po::value< string >(&trainingSamples), "Input training samples vector.")
         ("igt", po::value< string >(&groundTruth), "Input ground truth vector.")
         ("ica", po::value< string >(&classAtribure), "Class attribute name in input training samples and ground truth vectors.")
-        ("irr", po::value< string >(&reclasRulesFile), "Text file containing reclassification rules (1)")
+        ("irr", po::value< string >(&reclasRulesFile), "Text file containing reclassification rules.")
         ("demdir", po::value< string >(&demDir), "Directory containing SRTM hgt files.")
         ("olr", po::value< string >(&outRecl), "Output landcover raster.")
-        ("occ", po::value< string >(&outPodPlod), "Output criterium of crop raster.")
-        ("ocs", po::value< string >(&outPodSklon), "Output criterium of slope raster.")
-        ("oca", po::value< string >(&outPodRozloh), "Output criterium of area raster.")
+        ("occ", po::value< string >(&outPodPlod), "Output criterion of crop raster.")
+        ("ocs", po::value< string >(&outPodSklon), "Output criterion of slope raster.")
+        ("oca", po::value< string >(&outPodRozloh), "Output criterion of area raster.")
         ("out", po::value< string >(&outAll), "Output raster of suitability.")
         ("oa", po::value< string >(&outAlbedo), "Output albedo raster.");
 
-    string usage = " [-hslod] [--l8] [--s2] --isr [--its] [--igt] [--ica] [--demdir] [--irr] [--olr] [--occ] [--ocs] [--oa]";
+    string usage = " [-hslod] [--l8] [--s2] --isr file [--its file] [--igt file] [--ica name] [--irr file] [--demdir dir] [--olr file] [--occ file] [--ocs file] [--oca file] [--out file] [--oa file]";
 
     // CLI options handling
     po::variables_map vm;
@@ -151,7 +151,7 @@ int main(int argc, char* argv[])
 
     if (!parametersOk)
     {
-        cout << endl << "Use option -h [--help] for help." << endl << "Usage: " << argv[0] << usage << endl;
+        cout << endl << "Use option -h for help." << endl << "Usage: " << argv[0] << usage << endl;
         return -1;
     }
 
@@ -283,7 +283,7 @@ int main(int argc, char* argv[])
             cout << "Crop type and height reclassification ";
             cout.flush();
 
-            // criterium of crop applicaiton
+            // criterion of crop applicaiton
             oll::LabelImageType::Pointer podPlod = oll::LabelImageType::New();
             oll::reclassifyRaster(fusedImage, podPlod, reclassificationRules);
 
@@ -298,10 +298,10 @@ int main(int argc, char* argv[])
 
             cout << endl;
 
-            // criterium of slope application
+            // criterion of slope application
             if (vm.count("ocs") || vm.count("out") || vm.count("oca") || vm.count("out"))
             {
-                cout << "Criterium of slope ";
+                cout << "Criterion of slope ";
                 cout.flush();
 
                 oll::DoubleImageType::Pointer alignedDem = oll::DoubleImageType::New();
@@ -324,8 +324,8 @@ int main(int argc, char* argv[])
 
                 cout << endl;
 
-                // criterium of area application
-                cout << "Criterium of area size ";
+                // criterion of area application
+                cout << "Criterion of area size ";
                 cout.flush();
 
                 oll::LabelImageType::Pointer podRozloh = oll::LabelImageType::New();
